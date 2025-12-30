@@ -46,16 +46,25 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
 # 1. Ensure NotebookLM MCP server is configured
 claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
 
-# 2. Add the plugin marketplace
-claude plugin marketplace add /path/to/notebooklm-claude-integration/plugins/notebooklm
+# 2. Add the plugin marketplace from GitHub
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
 
 # 3. Install the plugin (project scope)
 claude plugin install notebooklm@notebooklm-plugin --scope project
 
-# 4. Restart Claude Code, then:
+# 4. Verify installation
+claude plugin marketplace list  # Should show: notebooklm-plugin
+claude plugin list              # Should show: notebooklm
+
+# 5. Restart Claude Code, then:
 /nlm auth setup                    # First-time authentication
 /nlm add <notebooklm-url>          # Add a notebook
 /nlm ask "Your question"           # Query the notebook
+```
+
+**For local development** (if you cloned this repo):
+```bash
+claude plugin marketplace add ./plugins/notebooklm
 ```
 
 ### For Claude Desktop (MCP)

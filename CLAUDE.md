@@ -78,22 +78,31 @@ The plugin uses these NotebookLM MCP tools:
 
 ### Prerequisites
 
-1. **NotebookLM MCP Server** - Required for browser automation:
+1. **Claude Code CLI** - Install if not already present:
+   ```bash
+   npm install -g @anthropic-ai/claude-code
+   ```
+
+2. **NotebookLM MCP Server** - Required for browser automation:
    ```bash
    claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
    ```
 
-2. **Google Chrome** - Required for Playwright automation
+3. **Google Chrome** - Required for Playwright automation
 
-3. **Google Account** - With NotebookLM access
+4. **Google Account** - With NotebookLM access
 
-### Installation Steps
+### Installation Methods
+
+#### Method 1: From GitHub (Recommended for End Users)
+
+Use this method if you want to install the plugin directly without cloning the repository:
 
 ```bash
-# 1. Add the marketplace
-claude plugin marketplace add ./plugins/notebooklm
+# 1. Add the marketplace from GitHub
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
 
-# 2. Install the plugin (project scope)
+# 2. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
 
 # 3. Restart Claude Code
@@ -103,11 +112,59 @@ claude
 /nlm auth setup
 ```
 
+#### Method 2: From Local Clone (For Development)
+
+Use this method if you've cloned the repository locally:
+
+```bash
+# 1. Clone the repository (if not already done)
+git clone https://github.com/ray-manaloto/notebooklm-claude-integration.git
+cd notebooklm-claude-integration
+
+# 2. Add the marketplace from local path
+claude plugin marketplace add ./plugins/notebooklm
+
+# 3. Install the plugin
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 4. Restart Claude Code
+claude
+
+# 5. First-time authentication
+/nlm auth setup
+```
+
+### Verifying Installation
+
+```bash
+# List registered marketplaces
+claude plugin marketplace list
+
+# List installed plugins
+claude plugin list
+
+# The output should show:
+# - Marketplace: notebooklm-plugin
+# - Plugin: notebooklm (with scope: project, user, or local)
+```
+
 ### Installation Scopes
 
-- **Project scope** (recommended): Available in current project
-- **User scope**: Available in all projects
-- **Local scope**: Project-specific, gitignored
+| Scope | Command Flag | Description |
+|-------|--------------|-------------|
+| **project** | `--scope project` | Available in current project (recommended) |
+| **user** | `--scope user` | Available in all your projects |
+| **local** | `--scope local` | Project-specific, gitignored |
+
+### Uninstalling
+
+```bash
+# Remove the plugin
+claude plugin uninstall notebooklm
+
+# Remove the marketplace (optional)
+claude plugin marketplace remove notebooklm-plugin
+```
 
 ## Architecture
 
@@ -156,29 +213,75 @@ The agent will:
 
 ## Troubleshooting
 
-### Not Authenticated
+### Plugin Not Found / Not Loading
+
+If commands like `/nlm` aren't working:
+
 ```bash
+# 1. Verify the marketplace is registered
+claude plugin marketplace list
+# Should show: notebooklm-plugin
+
+# 2. Verify the plugin is installed
+claude plugin list
+# Should show: notebooklm with your chosen scope
+
+# 3. If marketplace is missing, re-add it:
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+
+# 4. If plugin is missing, re-install it:
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 5. Restart Claude Code
+claude
+```
+
+### MCP Server Not Connected
+
+If you see errors about missing MCP tools:
+
+```bash
+# 1. Verify MCP server is configured
+claude mcp list
+# Should show: notebooklm
+
+# 2. If missing, add the MCP server
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+
+# 3. Restart Claude Code
+claude
+```
+
+### Not Authenticated
+
+```bash
+# Check authentication status
+/nlm auth
+
+# Setup authentication (opens browser)
 /nlm auth setup
 ```
 
 ### Rate Limited (50 queries/day free tier)
-- Wait for daily reset, or
+- Wait for daily reset (midnight UTC), or
 - Use `/nlm auth reset` to switch Google accounts
 - Consider Google AI Pro/Ultra for 5x limits
 
 ### Wrong Notebook Being Queried
+
 ```bash
-/nlm list           # See all notebooks
+/nlm list           # See all notebooks with [ACTIVE] marker
 /nlm select <name>  # Switch to correct one
 ```
 
-### Plugin Not Loading
-1. Verify installation:
-   ```bash
-   claude plugin marketplace list
-   ```
-2. Check plugin is installed with correct scope
-3. Restart Claude Code
+### Common Installation Mistakes
+
+| Issue | Solution |
+|-------|----------|
+| Wrong marketplace path | Use `./plugins/notebooklm` (includes .claude-plugin folder) |
+| Plugin not found during install | Ensure marketplace is added first with `marketplace add` |
+| Scope confusion | Use `--scope project` for most cases |
+| Old plugin version | Remove and re-add marketplace to update |
 
 ## Limits
 

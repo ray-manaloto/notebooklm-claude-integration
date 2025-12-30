@@ -20,36 +20,58 @@ Complete guide for installing and using the NotebookLM plugin for Claude Code.
 
 ## Installation
 
-### Step 1: Add the Marketplace
+### Method 1: From GitHub (Recommended)
+
+This is the easiest way to install - no need to clone the repository:
 
 ```bash
-# From the repository directory
-claude plugin marketplace add ./plugins/notebooklm
+# 1. Add the marketplace from GitHub
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
 
-# Or from absolute path
-claude plugin marketplace add /path/to/notebooklm-claude-integration/plugins/notebooklm
-```
-
-### Step 2: Install the Plugin
-
-Choose your installation scope:
-
-```bash
-# Project scope (recommended) - available in current project
+# 2. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
 
-# User scope - available in all projects
-claude plugin install notebooklm@notebooklm-plugin --scope user
-
-# Local scope - project-specific, gitignored
-claude plugin install notebooklm@notebooklm-plugin --scope local
+# 3. Restart Claude Code
+claude
 ```
 
-### Step 3: Restart Claude Code
+### Method 2: From Local Clone (For Development)
+
+Use this method if you're contributing to the plugin or need to modify it:
 
 ```bash
-# Exit and restart to load the plugin
+# 1. Clone the repository
+git clone https://github.com/ray-manaloto/notebooklm-claude-integration.git
+cd notebooklm-claude-integration
+
+# 2. Add the marketplace from local path
+claude plugin marketplace add ./plugins/notebooklm
+
+# 3. Install the plugin
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 4. Restart Claude Code
 claude
+```
+
+### Installation Scopes
+
+| Scope | Command | Description |
+|-------|---------|-------------|
+| `project` | `--scope project` | Available in current project (recommended) |
+| `user` | `--scope user` | Available in all projects |
+| `local` | `--scope local` | Project-specific, gitignored |
+
+### Verifying Installation
+
+```bash
+# Check marketplace is added
+claude plugin marketplace list
+# Should show: notebooklm-plugin
+
+# Check plugin is installed
+claude plugin list
+# Should show: notebooklm with your chosen scope
 ```
 
 ## First-Time Authentication
@@ -200,12 +222,49 @@ plugins/notebooklm/
 ```
 
 ### Plugin Not Loading
-1. Verify installation:
+1. Verify marketplace is added:
    ```bash
    claude plugin marketplace list
+   # Should show: notebooklm-plugin
    ```
-2. Check plugin is installed with correct scope
+2. Verify plugin is installed:
+   ```bash
+   claude plugin list
+   # Should show: notebooklm
+   ```
 3. Restart Claude Code
+4. If still not working, try reinstalling:
+   ```bash
+   claude plugin uninstall notebooklm
+   claude plugin marketplace remove notebooklm-plugin
+   # Then follow installation steps again
+   ```
+
+### MCP Server Not Connected
+```bash
+# Verify MCP server is added
+claude mcp list
+# Should show: notebooklm
+
+# If not present, add it
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+
+# Restart Claude Code after adding
+claude
+```
+
+## Uninstalling
+
+```bash
+# Remove the plugin
+claude plugin uninstall notebooklm
+
+# Remove the marketplace
+claude plugin marketplace remove notebooklm-plugin
+
+# Optionally remove the MCP server
+claude mcp remove notebooklm
+```
 
 ## MCP Tools Reference
 

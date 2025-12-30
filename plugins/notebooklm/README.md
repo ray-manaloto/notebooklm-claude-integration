@@ -19,8 +19,8 @@ This plugin integrates NotebookLM with Claude Code, enabling you to:
 # 1. Install the MCP server (prerequisite)
 claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
 
-# 2. Add the marketplace
-claude plugin marketplace add https://github.com/ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+# 2. Add the marketplace from GitHub
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
 
 # 3. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -33,6 +33,13 @@ claude plugin install notebooklm@notebooklm-plugin --scope project
 
 # 6. Start querying
 /nlm ask "How do I implement authentication?"
+```
+
+### Verify Installation
+
+```bash
+claude plugin marketplace list  # Should show: notebooklm-plugin
+claude plugin list              # Should show: notebooklm
 ```
 
 ## Components
