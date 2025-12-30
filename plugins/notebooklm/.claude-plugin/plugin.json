@@ -1,0 +1,29 @@
+{
+  "name": "notebooklm",
+  "version": "1.0.0",
+  "description": "Query Google NotebookLM notebooks for source-grounded, citation-backed answers. Manage notebook library and conduct research directly from Claude Code.",
+  "author": {
+    "name": "Ray Manaloto",
+    "url": "https://github.com/ray-manaloto"
+  },
+  "homepage": "https://github.com/ray-manaloto/notebooklm-claude-integration",
+  "repository": "https://github.com/ray-manaloto/notebooklm-claude-integration",
+  "license": "MIT",
+  "keywords": [
+    "notebooklm",
+    "research",
+    "documentation",
+    "knowledge-base",
+    "gemini",
+    "google"
+  ],
+  "commands": [
+    "./commands/nlm.md"
+  ],
+  "agents": [
+    "./agents/research-agent.md"
+  ],
+  "skills": [
+    "./skills/notebooklm-patterns"
+  ]
+}
