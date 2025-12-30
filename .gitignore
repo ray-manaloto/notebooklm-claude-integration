@@ -28,3 +28,24 @@ npm-debug.log*
 # Local configuration
 .claude/
 *.local.*
+
+# MCP Tools
+.serena/
+.mcp/
+
+# NotebookLM MCP Server
+notebooklm-mcp-data/
+.notebooklm/
+
+# Playwright
+playwright-report/
+test-results/
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Coverage
+coverage/
+.nyc_output/
