@@ -49,6 +49,18 @@ Use this sequence to automate connecting and querying:
    - `mcp__notebooklm__ask_question` with `question`.
 4. For follow-ups, pass `session_id` from the prior response.
 
+## Multi-Notebook Query (Codex)
+
+When you need the same question answered across all notebooks, prefer `ask_question` with `notebook_id` to avoid race conditions from global `select_notebook` state.
+
+1. `mcp__notebooklm__list_notebooks` to get all notebook IDs.
+2. For each notebook, call `mcp__notebooklm__ask_question` with `notebook_id` and the same `question`.
+3. Aggregate responses, labeling each answer with notebook name/ID and citations.
+
+Notes:
+- Parallel calls are fine, but keep within rate limits (each notebook query counts).
+- Avoid `select_notebook` inside parallel workers since it mutates shared active state.
+
 ### Example: Add and Query
 
 If a notebook is not yet in the library:
