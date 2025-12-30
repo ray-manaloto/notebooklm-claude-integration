@@ -1,493 +1,428 @@
 # API Reference
 
-Complete reference for all NotebookLM Claude Integration commands and features.
+Complete reference for all NotebookLM Claude Integration commands and MCP tools.
 
 ## Table of Contents
 
 - [Slash Commands](#slash-commands)
-- [Python Scripts](#python-scripts)
-- [Configuration](#configuration)
+- [MCP Tools](#mcp-tools)
 - [Data Structures](#data-structures)
+- [Error Handling](#error-handling)
 
 ---
 
 ## Slash Commands
 
-### `/notebook-auth`
+### `/nlm`
 
-Manage NotebookLM authentication.
+Main command for NotebookLM interactions. Provides subcommands for all operations.
 
 **Usage:**
 ```bash
-/notebook-auth <command>
+/nlm <subcommand> [arguments]
 ```
 
-**Commands:**
+---
 
-#### `status`
+### `/nlm ask`
+
+Query the active notebook with a question.
+
+**Usage:**
+```bash
+/nlm ask "<question>"
+```
+
+**Examples:**
+```bash
+/nlm ask "How do I implement OAuth2 in FastAPI?"
+/nlm ask "What are the rate limiting best practices?"
+/nlm ask "Explain the authentication flow"
+```
+
+**Response includes:**
+- Answer from NotebookLM (powered by Gemini)
+- Citations from your uploaded documents
+- Source references
+
+**Note:** Requires an active notebook. Use `/nlm list` to see available notebooks.
+
+---
+
+### `/nlm add`
+
+Add a notebook to your library and set it as active.
+
+**Usage:**
+```bash
+/nlm add <url>
+```
+
+**Example:**
+```bash
+/nlm add https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069
+```
+
+**Behavior:**
+1. Queries the notebook to discover its content
+2. Extracts name, description, and topics automatically
+3. Adds it to your library
+4. Sets it as the active notebook
+
+---
+
+### `/nlm list`
+
+List all notebooks in your library.
+
+**Usage:**
+```bash
+/nlm list
+```
+
+**Output:**
+```
+Notebooks in library:
+1. [ACTIVE] FastAPI Documentation
+   Topics: fastapi, python, rest, api
+
+2. Security Guide
+   Topics: oauth, jwt, security
+```
+
+---
+
+### `/nlm select`
+
+Set a notebook as active for queries.
+
+**Usage:**
+```bash
+/nlm select <name or partial match>
+```
+
+**Examples:**
+```bash
+/nlm select "FastAPI Documentation"
+/nlm select fastapi
+/nlm select security
+```
+
+**Note:** Supports partial matching - "fastapi" matches "FastAPI Documentation".
+
+---
+
+### `/nlm auth`
+
 Check authentication status.
 
+**Usage:**
 ```bash
-/notebook-auth status
-
-# Returns:
-{
-  "status": "authenticated|not_authenticated",
-  "email": "user@example.com",
-  "expires": "2025-02-15",
-  "last_check": "2024-12-29T10:30:00Z"
-}
+/nlm auth
 ```
 
-#### `setup`
-Interactive authentication setup. Opens Chrome for Google login.
-
-```bash
-/notebook-auth setup
-
-# Process:
-# 1. Launches Chrome browser
-# 2. Navigates to NotebookLM
-# 3. Prompts for Google login
-# 4. Saves session state
-# 5. Returns authentication confirmation
+**Output:**
 ```
-
-#### `reset`
-Clear authentication and browser state.
-
-```bash
-/notebook-auth reset
-
-# Returns:
-{
-  "status": "reset_complete",
-  "message": "Authentication cleared. Run setup to re-authenticate."
-}
+Authentication Status:
+- Authenticated: true
+- Ready to query notebooks
 ```
 
 ---
 
-### `/notebook`
+### `/nlm auth setup`
 
-Main notebook management command.
+First-time authentication. Opens browser for Google login.
 
 **Usage:**
 ```bash
-/notebook <subcommand> [args...]
+/nlm auth setup
 ```
 
-**Subcommands:**
+**Process:**
+1. Opens Chrome browser window
+2. Navigates to NotebookLM
+3. Prompts for Google login
+4. Saves session state locally
+5. Returns confirmation
 
-#### `add`
-Add a notebook to your library.
+**Note:** Credentials stored locally by MCP server. No data sent to third parties.
 
+---
+
+### `/nlm auth reset`
+
+Clear authentication and re-authenticate with a different account.
+
+**Usage:**
 ```bash
-/notebook add <url> [name] [description] [topics...]
-
-# Examples:
-/notebook add https://notebooklm.google.com/notebook/abc123
-
-/notebook add https://notebooklm.google.com/notebook/abc123 "API Docs"
-
-/notebook add https://notebooklm.google.com/notebook/abc123 \
-  "Security Guide" \
-  "OAuth, JWT, security best practices" \
-  "authentication,security"
-
-# Returns:
-{
-  "id": "abc123",
-  "name": "API Docs",
-  "url": "https://notebooklm.google.com/notebook/abc123",
-  "added": "2024-12-29T10:30:00Z",
-  "active": false
-}
+/nlm auth reset
 ```
+
+**Use cases:**
+- Switch to a different Google account
+- Rate limit reached on current account
+- Clear corrupted browser state
+
+---
+
+## MCP Tools
+
+The plugin uses these MCP tools from the NotebookLM MCP server:
+
+### `mcp__notebooklm__ask_question`
+
+Query a notebook with a question.
 
 **Parameters:**
-- `url` (required) - Full NotebookLM notebook URL
-- `name` (optional) - Display name, auto-extracted if not provided
-- `description` (optional) - Notebook description
-- `topics` (optional) - Comma-separated topics for search
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `question` | string | Yes | The question to ask |
+| `notebook_id` | string | No | Specific notebook ID (uses active if omitted) |
+| `session_id` | string | No | Session for contextual conversations |
 
----
-
-#### `list`
-List all notebooks in library.
-
-```bash
-/notebook list
-
-# Returns:
-[
-  {
-    "id": "abc123",
-    "name": "API Docs",
-    "description": "FastAPI documentation",
-    "topics": ["fastapi", "python", "rest"],
-    "active": true,
-    "added": "2024-12-29T10:30:00Z"
-  },
-  {
-    "id": "def456",
-    "name": "Security Guide",
-    "topics": ["oauth", "jwt", "security"],
-    "active": false,
-    "added": "2024-12-28T15:20:00Z"
-  }
-]
-```
-
----
-
-#### `activate`
-Set active notebook for queries.
-
-```bash
-/notebook activate <identifier>
-
-# By ID:
-/notebook activate abc123
-
-# By name (partial match):
-/notebook activate "API Docs"
-
-# By index (from list):
-/notebook activate 1
-
-# Returns:
+**Response:**
+```json
 {
-  "id": "abc123",
-  "name": "API Docs",
-  "status": "activated",
-  "previous": "def456"
-}
-```
-
----
-
-#### `ask`
-Query the active notebook.
-
-```bash
-/notebook ask "<question>"
-
-# Examples:
-/notebook ask "How do I implement OAuth2?"
-
-/notebook ask "What are the rate limiting best practices?"
-
-# Returns:
-{
-  "question": "How do I implement OAuth2?",
-  "answer": "To implement OAuth2 in FastAPI...",
+  "answer": "To implement OAuth2...",
   "citations": [
     {
       "source": "auth-guide.pdf",
-      "page": 12,
-      "excerpt": "OAuth2 with Password (and hashing)..."
+      "excerpt": "OAuth2 with Password flow..."
     }
   ],
-  "follow_up_questions": [
-    "What are the security considerations for OAuth2?",
-    "How do I handle token refresh?"
-  ],
-  "notebook": "API Docs",
-  "timestamp": "2024-12-29T10:35:00Z"
+  "notebook_id": "abc123"
 }
 ```
 
 ---
 
-#### `search`
-Search library by topic.
+### `mcp__notebooklm__add_notebook`
 
-```bash
-/notebook search <topic>
+Add a notebook to the library.
 
-# Examples:
-/notebook search authentication
-/notebook search "rate limiting"
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `url` | string | Yes | Full NotebookLM notebook URL |
+| `name` | string | No | Display name (auto-extracted if omitted) |
+| `description` | string | No | Notebook description |
+| `topics` | array | No | Topics for search/organization |
 
-# Returns:
-[
-  {
-    "id": "abc123",
-    "name": "API Docs",
-    "relevance": 0.95,
-    "matching_topics": ["authentication", "oauth"]
-  },
-  {
-    "id": "ghi789",
-    "name": "Security Guide",
-    "relevance": 0.78,
-    "matching_topics": ["authentication", "jwt"]
-  }
-]
-```
-
----
-
-## Python Scripts
-
-All scripts located in: `~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts/`
-
-### `run.py`
-
-Main command router.
-
-```python
-python3 run.py <command> [args...]
-```
-
-**Commands:**
-- `auth status|setup|reset`
-- `add <url> [name] [description] [topics]`
-- `list`
-- `activate <identifier>`
-- `ask <question>`
-- `search <topic>`
-
----
-
-### `auth_manager.py`
-
-Authentication management module.
-
-```python
-from auth_manager import AuthManager
-
-auth = AuthManager()
-
-# Check status
-status = auth.get_status()
-
-# Setup authentication
-success = auth.setup()
-
-# Reset
-auth.reset()
-```
-
-**Methods:**
-- `get_status()` → dict
-- `setup()` → bool
-- `reset()` → None
-- `is_authenticated()` → bool
-
----
-
-### `notebook_manager.py`
-
-Library management module.
-
-```python
-from notebook_manager import NotebookManager
-
-manager = NotebookManager()
-
-# Add notebook
-notebook = manager.add_notebook(
-    url="https://notebooklm.google.com/notebook/abc123",
-    name="API Docs",
-    description="FastAPI documentation",
-    topics=["fastapi", "python"]
-)
-
-# List notebooks
-notebooks = manager.list_notebooks()
-
-# Activate notebook
-active = manager.activate_notebook("abc123")
-
-# Search
-results = manager.search_by_topic("authentication")
-```
-
-**Methods:**
-- `add_notebook(url, name=None, description=None, topics=None)` → dict
-- `list_notebooks()` → list[dict]
-- `activate_notebook(identifier)` → dict
-- `search_by_topic(topic)` → list[dict]
-- `get_active_notebook()` → dict | None
-
----
-
-### `ask_question.py`
-
-Query execution module.
-
-```python
-from ask_question import ask_notebook
-
-result = ask_notebook(
-    question="How do I implement OAuth2?",
-    notebook_id="abc123"
-)
-
-print(result["answer"])
-print(result["citations"])
-```
-
-**Methods:**
-- `ask_notebook(question, notebook_id=None)` → dict
-
-**Response Structure:**
-```python
-{
-    "question": str,
-    "answer": str,
-    "citations": [
-        {
-            "source": str,
-            "page": int,
-            "excerpt": str
-        }
-    ],
-    "follow_up_questions": list[str],
-    "notebook": str,
-    "timestamp": str
-}
-```
-
----
-
-## Configuration
-
-### Directory Structure
-
-```
-~/.claude/plugins/installed/notebooklm/
-├── .claude-plugin/
-│   └── plugin.json
-├── commands/
-│   ├── notebook-auth.md
-│   └── notebook.md
-├── agents/
-│   └── research-agent.md
-└── skills/notebooklm/
-    ├── SKILL.md
-    ├── scripts/
-    │   ├── run.py
-    │   ├── auth_manager.py
-    │   ├── notebook_manager.py
-    │   ├── ask_question.py
-    │   └── requirements.txt
-    └── data/
-        ├── library.json
-        ├── auth_info.json
-        └── browser_state/
-```
-
----
-
-### Plugin Configuration
-
-**File:** `.claude-plugin/plugin.json`
-
+**Response:**
 ```json
 {
-  "name": "notebooklm",
-  "version": "1.0.0",
-  "description": "Query your NotebookLM notebooks",
-  "author": "Raymond Manaloto",
-  "commands": ["notebook", "notebook-auth"],
-  "agents": ["research-agent"],
-  "skills": ["notebooklm"]
+  "id": "abc123",
+  "name": "API Documentation",
+  "url": "https://notebooklm.google.com/notebook/abc123",
+  "topics": ["api", "rest", "fastapi"]
 }
 ```
 
 ---
 
-## Data Structures
+### `mcp__notebooklm__list_notebooks`
 
-### Library Schema
+List all notebooks in the library.
 
-**File:** `data/library.json`
+**Parameters:** None
 
+**Response:**
 ```json
 {
   "notebooks": [
     {
       "id": "abc123",
-      "name": "API Docs",
-      "url": "https://notebooklm.google.com/notebook/abc123",
-      "description": "FastAPI documentation",
-      "topics": ["fastapi", "python", "rest"],
-      "added": "2024-12-29T10:30:00Z",
-      "last_accessed": "2024-12-29T14:20:00Z",
-      "query_count": 42
+      "name": "API Documentation",
+      "topics": ["api", "rest"],
+      "active": true
+    },
+    {
+      "id": "def456",
+      "name": "Security Guide",
+      "topics": ["oauth", "jwt"],
+      "active": false
     }
-  ],
-  "active_notebook": "abc123",
-  "settings": {
-    "auto_activate_on_add": false,
-    "citation_format": "full"
-  }
+  ]
 }
 ```
 
 ---
 
-### Auth Info Schema
+### `mcp__notebooklm__select_notebook`
 
-**File:** `data/auth_info.json`
+Set a notebook as active.
 
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Notebook ID to activate |
+
+**Response:**
+```json
+{
+  "id": "abc123",
+  "name": "API Documentation",
+  "active": true
+}
+```
+
+---
+
+### `mcp__notebooklm__get_notebook`
+
+Get detailed information about a specific notebook.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `id` | string | Yes | Notebook ID |
+
+**Response:**
+```json
+{
+  "id": "abc123",
+  "name": "API Documentation",
+  "description": "FastAPI documentation and guides",
+  "topics": ["api", "rest", "fastapi"],
+  "url": "https://notebooklm.google.com/notebook/abc123",
+  "added": "2024-12-29T10:30:00Z"
+}
+```
+
+---
+
+### `mcp__notebooklm__search_notebooks`
+
+Search notebooks by query.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Search query |
+
+**Response:**
+```json
+{
+  "notebooks": [
+    {
+      "id": "abc123",
+      "name": "API Documentation",
+      "relevance": 0.95
+    }
+  ]
+}
+```
+
+---
+
+### `mcp__notebooklm__get_health`
+
+Check authentication and server health.
+
+**Parameters:** None
+
+**Response:**
 ```json
 {
   "authenticated": true,
-  "email": "user@example.com",
-  "auth_date": "2024-12-29T10:00:00Z",
-  "expires": "2025-02-15T10:00:00Z",
-  "browser_state_path": "data/browser_state",
-  "last_check": "2024-12-29T14:30:00Z"
+  "activeSessions": 1,
+  "ready": true
 }
 ```
 
 ---
 
-## Error Codes
+### `mcp__notebooklm__setup_auth`
 
-| Code | Message | Resolution |
-|------|---------|------------|
-| `AUTH_REQUIRED` | Not authenticated | Run `/notebook-auth setup` |
-| `NO_ACTIVE_NOTEBOOK` | No notebook activated | Run `/notebook activate <id>` |
-| `NOTEBOOK_NOT_FOUND` | Invalid notebook ID | Check `/notebook list` |
-| `BROWSER_ERROR` | Chrome automation failed | Check Chrome installation |
-| `NETWORK_ERROR` | NotebookLM unreachable | Check internet connection |
-| `INVALID_URL` | Malformed notebook URL | Verify URL format |
+Initial authentication setup.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `show_browser` | boolean | No | Show browser window (default: true for setup) |
+
+**Behavior:** Opens browser for Google login.
 
 ---
 
-## Environment Variables
+### `mcp__notebooklm__re_auth`
 
-Create `.env` in scripts directory:
+Clear and re-authenticate.
 
-```bash
-# Browser settings
-CHROME_PATH=/usr/bin/google-chrome
-HEADLESS=false
-BROWSER_TIMEOUT=30000
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `show_browser` | boolean | No | Show browser window (default: true) |
 
-# NotebookLM settings
-NOTEBOOKLM_URL=https://notebooklm.google.com
-QUERY_TIMEOUT=10000
+**Behavior:** Clears browser state and opens new login.
 
-# Debug
-DEBUG=false
-LOG_LEVEL=INFO
+---
+
+## Data Structures
+
+### Notebook Object
+
+```json
+{
+  "id": "string",
+  "name": "string",
+  "description": "string",
+  "url": "string",
+  "topics": ["string"],
+  "added": "ISO8601 timestamp",
+  "active": "boolean"
+}
+```
+
+### Query Response
+
+```json
+{
+  "answer": "string",
+  "citations": [
+    {
+      "source": "string",
+      "excerpt": "string"
+    }
+  ],
+  "notebook_id": "string",
+  "session_id": "string"
+}
+```
+
+### Health Status
+
+```json
+{
+  "authenticated": "boolean",
+  "activeSessions": "number",
+  "ready": "boolean"
+}
 ```
 
 ---
 
-## Rate Limits
+## Error Handling
 
-| Operation | Limit | Window |
-|-----------|-------|--------|
-| Queries | 10 | 1 minute |
-| Add notebook | 5 | 1 minute |
-| Auth setup | 3 | 1 hour |
+### Common Errors
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| `Not authenticated` | No valid session | Run `/nlm auth setup` |
+| `No active notebook` | No notebook selected | Run `/nlm list` and `/nlm select` |
+| `Notebook not found` | Invalid notebook ID | Check `/nlm list` for valid IDs |
+| `Rate limit exceeded` | 50 daily queries (free tier) | Wait for reset or use `/nlm auth reset` |
+| `Browser error` | Playwright issue | Check Chrome installation |
+| `Network error` | NotebookLM unreachable | Check internet connection |
+
+### Rate Limits
+
+| Resource | Free Tier | Pro/Ultra |
+|----------|-----------|-----------|
+| Daily Queries | 50 | 250 |
+| Notebooks | 100 | 500 |
+| Sources per Notebook | 50 | 100 |
 
 ---
 
@@ -496,55 +431,58 @@ LOG_LEVEL=INFO
 ### Complete Workflow
 
 ```bash
-# 1. Setup authentication
-/notebook-auth setup
-# → Opens Chrome, login with Google
+# 1. Setup authentication (first time only)
+/nlm auth setup
 
-# 2. Add notebooks
-/notebook add https://notebooklm.google.com/notebook/api-docs "API Docs"
-/notebook add https://notebooklm.google.com/notebook/security "Security Guide"
+# 2. Add a notebook
+/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
 
-# 3. List and activate
-/notebook list
-/notebook activate "API Docs"
+# 3. List notebooks
+/nlm list
 
-# 4. Query
-/notebook ask "How do I implement rate limiting?"
+# 4. Query the notebook
+/nlm ask "How do I implement rate limiting?"
 
 # 5. Switch notebooks
-/notebook activate "Security Guide"
-/notebook ask "What are OAuth2 best practices?"
+/nlm select "Security Guide"
+/nlm ask "What are OAuth2 best practices?"
 ```
 
-### Programmatic Usage
+### Research Agent Trigger
 
-```python
-#!/usr/bin/env python3
+The research agent activates automatically for research-related queries:
 
-from notebook_manager import NotebookManager
-from ask_question import ask_notebook
+```
+Research authentication patterns from my documentation
+```
 
-# Initialize
-manager = NotebookManager()
+The agent will:
+1. Query the active notebook
+2. Generate follow-up questions
+3. Synthesize a comprehensive answer with citations
 
-# Add notebook
-manager.add_notebook(
-    url="https://notebooklm.google.com/notebook/abc123",
-    name="Tech Docs",
-    topics=["python", "api"]
-)
+---
 
-# Activate
-manager.activate_notebook("abc123")
+## Plugin Structure
 
-# Query
-result = ask_notebook("How do I handle errors?")
-
-print(f"Answer: {result['answer']}")
-for citation in result['citations']:
-    print(f"Source: {citation['source']}")
+```
+plugins/notebooklm/
+├── .claude-plugin/
+│   ├── plugin.json          # Plugin manifest
+│   └── marketplace.json     # Marketplace manifest
+├── commands/
+│   └── nlm.md               # /nlm command definition
+├── agents/
+│   └── research-agent.md    # Proactive research agent
+├── skills/
+│   └── notebooklm-patterns/
+│       └── SKILL.md         # MCP tools reference
+└── README.md
 ```
 
 ---
 
-For more examples, see the [examples/](../examples/) directory.
+For more help, see:
+- [Claude Code Setup](CLAUDE_CODE_SETUP.md) - Installation guide
+- [Troubleshooting](TROUBLESHOOTING.md) - Common issues
+- [Main README](../README.md) - Project overview

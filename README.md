@@ -4,7 +4,7 @@ Complete integration of Google NotebookLM with Claude AI through both Claude Des
 
 > **Status**: Production-ready ✅ | **Built**: Dec 2024 | **Tested**: Fully functional
 
-## 🎯 What This Is
+## What This Is
 
 This project provides **two complete integrations** for using NotebookLM with Claude:
 
@@ -13,7 +13,25 @@ This project provides **two complete integrations** for using NotebookLM with Cl
 
 Both allow you to query your NotebookLM notebooks directly from Claude, getting citation-backed answers from Gemini without leaving your workflow.
 
-## ⚡ Quick Start
+## Quick Start
+
+### For Claude Code (Plugin)
+
+```bash
+# 1. Ensure NotebookLM MCP server is configured
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+
+# 2. Add the plugin marketplace
+claude plugin marketplace add /path/to/notebooklm-claude-integration/plugins/notebooklm
+
+# 3. Install the plugin (project scope)
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 4. Restart Claude Code, then:
+/nlm auth setup                    # First-time authentication
+/nlm add <notebooklm-url>          # Add a notebook
+/nlm ask "Your question"           # Query the notebook
+```
 
 ### For Claude Desktop (MCP)
 
@@ -38,69 +56,62 @@ Restart Claude Desktop, then:
 Add my notebook: https://notebooklm.google.com/notebook/YOUR_ID
 ```
 
-### For Claude Code (Plugin)
-
-```bash
-# Install Claude Code
-npm install -g @anthropic/claude-code
-
-# Clone this repo
-git clone https://github.com/ray-manaloto/notebooklm-claude-integration.git
-cd notebooklm-claude-integration
-
-# Install the plugin
-cp -r plugin/notebooklm ~/.claude/plugins/installed/
-
-# Install dependencies
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-pip install -r requirements.txt
-
-# Start Claude Code
-claude
-```
-
-Then use:
-```bash
-/notebook-auth setup
-/notebook add https://notebooklm.google.com/notebook/YOUR_ID
-/notebook ask "Your question"
-```
-
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 notebooklm-claude-integration/
-├── plugin/                          # Claude Code Plugin
+├── plugins/                         # Claude Code Plugin (NEW)
 │   └── notebooklm/
 │       ├── .claude-plugin/
-│       ├── commands/                # Slash commands
-│       ├── agents/                  # Research agent
-│       └── skills/
-│           └── notebooklm/
-│               ├── SKILL.md
-│               ├── scripts/         # Python automation
-│               └── data/            # Local storage
+│       │   ├── plugin.json          # Plugin manifest
+│       │   └── marketplace.json     # Marketplace manifest
+│       ├── commands/
+│       │   └── nlm.md               # /nlm command (ask, add, list, select, auth)
+│       ├── agents/
+│       │   └── research-agent.md    # Proactive research agent
+│       ├── skills/
+│       │   └── notebooklm-patterns/
+│       │       └── SKILL.md         # MCP tools reference & troubleshooting
+│       └── README.md
 │
-├── mcp-desktop/                     # Claude Desktop setup
-│   └── config/
-│       └── claude_desktop_config.json
+├── mcp-config/                      # MCP configuration utilities
+│   ├── servers.json                 # Unified MCP server config
+│   ├── install-desktop.sh           # Deploy to Claude Desktop
+│   ├── install-code.sh              # Deploy to Claude Code
+│   └── update-all.sh                # Update both environments
 │
-├── docs/                            # Complete documentation
+├── docs/                            # Documentation
 │   ├── CLAUDE_DESKTOP_SETUP.md
 │   ├── CLAUDE_CODE_SETUP.md
 │   ├── API_REFERENCE.md
 │   └── TROUBLESHOOTING.md
 │
 ├── examples/                        # Usage examples
-│   ├── basic-usage/
-│   ├── advanced-workflows/
-│   └── integration-patterns/
 │
-└── tests/                          # Test suite
-    └── test_plugin.py
+└── tests/                           # Test suite
 ```
 
-## 🚀 Features
+## Plugin Commands
+
+| Command | Description |
+|---------|-------------|
+| `/nlm ask <question>` | Ask a question to the active notebook |
+| `/nlm add <url>` | Add a notebook to your library (auto-selects as active) |
+| `/nlm list` | List all notebooks in your library |
+| `/nlm select <name>` | Set active notebook for queries |
+| `/nlm auth` | Check authentication status |
+| `/nlm auth setup` | First-time authentication (opens browser) |
+| `/nlm auth reset` | Clear and re-authenticate |
+
+## Features
+
+### Claude Code Plugin
+- ✅ `/nlm` command with subcommands
+- ✅ Research agent with automatic follow-up questions
+- ✅ Library management (add, list, select, search)
+- ✅ Uses existing NotebookLM MCP server
+- ✅ Citation-backed answers from Gemini
+- ✅ Troubleshooting skill with MCP tools reference
 
 ### Claude Desktop (MCP)
 - ✅ Natural language notebook queries
@@ -109,216 +120,127 @@ notebooklm-claude-integration/
 - ✅ Multi-notebook support
 - ✅ Persistent authentication
 
-### Claude Code (Plugin)
-- ✅ Slash commands (`/notebook`, `/notebook-auth`)
-- ✅ Research agent with auto-followup
-- ✅ Library management
-- ✅ Topic-based search
-- ✅ Development workflow integration
-- ✅ Citation extraction
-
-## 💡 Use Cases
-
-**During Development:**
-```bash
-/notebook ask "How do I implement OAuth2 in FastAPI?"
-# Get instant answer with citations from your docs
-```
-
-**Research Mode:**
-```bash
-/notebook add https://notebooklm.google.com/notebook/api-docs
-/notebook add https://notebooklm.google.com/notebook/security-guide
-/notebook search "authentication"
-```
-
-**Agent Mode:**
-```bash
-/research "Rate limiting best practices"
-# Auto-follows up with related questions
-# Synthesizes comprehensive guide
-```
-
-## 🔧 How It Works
-
-### Architecture
+## Architecture
 
 ```
 ┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Claude    │────────>│   Plugin     │────────>│  Patchright │
-│  Code CLI   │         │   Scripts    │         │   Browser   │
+│   Claude    │────────>│   Plugin     │────────>│ NotebookLM  │
+│  Code CLI   │         │  Commands    │         │ MCP Server  │
 └─────────────┘         └──────────────┘         └─────────────┘
                                │                        │
                                │                        v
                                │                 ┌─────────────┐
-                               │                 │ NotebookLM  │
-                               v                 │   (Gemini)  │
-                        ┌──────────┐            └─────────────┘
-                        │  Library │
-                        │  (JSON)  │
-                        └──────────┘
+                               │                 │  Playwright │
+                               v                 │   Browser   │
+                        ┌──────────────┐         └─────────────┘
+                        │ MCP Tools    │                │
+                        │ - ask_question│               v
+                        │ - add_notebook│        ┌─────────────┐
+                        │ - list_notebooks│      │ NotebookLM  │
+                        │ - select_notebook│     │   (Gemini)  │
+                        │ - get_health  │        └─────────────┘
+                        └──────────────┘
 ```
 
-1. **Command Layer**: Slash commands and natural language
-2. **Plugin Layer**: Command routing and validation
-3. **Automation Layer**: Browser automation with Patchright
-4. **NotebookLM Layer**: Gemini-powered answers with citations
-5. **Storage Layer**: Local library and auth persistence
+The plugin uses the NotebookLM MCP server which handles:
+- Browser automation via Playwright
+- Google authentication
+- Notebook library management
+- Session handling
 
-### Authentication Flow
+## Use Cases
 
-```
-1. /notebook-auth setup
-   ↓
-2. Chrome opens (Patchright)
-   ↓
-3. Navigate to NotebookLM
-   ↓
-4. User logs in with Google
-   ↓
-5. Session saved locally
-   ↓
-6. Browser state persisted (30+ days)
-```
-
-### Query Flow
-
-```
-1. /notebook ask "question"
-   ↓
-2. Load active notebook from library
-   ↓
-3. Open notebook in browser
-   ↓
-4. Type question into NotebookLM
-   ↓
-5. Wait for Gemini response
-   ↓
-6. Extract answer + citations
-   ↓
-7. Return structured response
-```
-
-## 📚 Documentation
-
-- [**Claude Desktop Setup**](docs/CLAUDE_DESKTOP_SETUP.md) - Complete MCP setup guide
-- [**Claude Code Setup**](docs/CLAUDE_CODE_SETUP.md) - Plugin installation guide
-- [**API Reference**](docs/API_REFERENCE.md) - All commands and options
-- [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [**Examples**](examples/) - Real-world usage patterns
-
-## 🧪 Testing
-
-The plugin includes a complete test suite and simulator:
-
+**Quick Research:**
 ```bash
-# Run the automated tests
-cd tests
-python3 test_plugin.py
-
-# Run the interactive simulator
-python3 simulator.py
+/nlm ask "How do I implement OAuth2 in FastAPI?"
+# Get instant answer with citations from your docs
 ```
 
-## 🛠️ Requirements
+**Add Documentation:**
+```bash
+/nlm add https://notebooklm.google.com/notebook/YOUR_ID
+# Automatically discovers content and sets as active
+```
 
-**System:**
-- Python 3.10+
-- Node.js 18+
-- Chrome browser
+**Deep Research (via agent):**
+```
+"Research authentication patterns from my documentation"
+# research-agent activates, asks follow-up questions, synthesizes answer
+```
 
-**Python Dependencies:**
-- `patchright>=1.45.1` - Browser automation
-- `python-dotenv>=1.0.0` - Configuration
+## Requirements
 
-**For Claude Code:**
-- `@anthropic/claude-code` - Claude Code CLI
+**For Claude Code Plugin:**
+- Claude Code CLI
+- NotebookLM MCP server (`npx -y notebooklm-mcp@latest`)
+- Google Chrome browser
+- Google account with NotebookLM access
 
 **For Claude Desktop:**
-- `notebooklm-mcp` - MCP server package
+- Claude Desktop
+- `notebooklm-mcp` package
 
-## 🔒 Security & Privacy
+## Installation Options
 
-- ✅ All data stored locally
-- ✅ No data sent to third parties
-- ✅ Browser session encrypted
-- ✅ Credentials never logged
-- ⚠️ Consider dedicated Google account
-- ⚠️ NotebookLM terms of service apply
-
-**Data Storage Locations:**
-
-```
-~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/
-├── library.json           # Notebook metadata
-├── auth_info.json        # Auth status
-└── browser_state/        # Chrome session data
-```
-
-## 🐛 Troubleshooting
-
-### Plugin not found
+### Project Scope (Recommended)
 ```bash
-/plugin marketplace list
-# Re-add if missing
-/plugin marketplace add ~/notebooklm-plugin-marketplace
+claude plugin install notebooklm@notebooklm-plugin --scope project
 ```
 
-### Chrome crashes
+### User Scope (All Projects)
 ```bash
-# Clear browser state
-rm -rf ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/browser_state/
+claude plugin install notebooklm@notebooklm-plugin --scope user
 ```
 
-### Authentication fails
+### Local Scope (Gitignored)
 ```bash
-/notebook-auth reset
-/notebook-auth setup
+claude plugin install notebooklm@notebooklm-plugin --scope local
+```
+
+## Troubleshooting
+
+### Not Authenticated
+```bash
+/nlm auth setup
+```
+
+### Rate Limited (50 queries/day free tier)
+- Wait for daily reset, or
+- Use `/nlm auth reset` to switch Google accounts
+
+### Wrong Notebook
+```bash
+/nlm list           # See all notebooks
+/nlm select <name>  # Switch to correct one
 ```
 
 See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for complete guide.
 
-## 🤝 Contributing
+## Documentation
 
-Contributions welcome! Areas of interest:
+- [**Claude Code Setup**](docs/CLAUDE_CODE_SETUP.md) - Plugin installation guide
+- [**Claude Desktop Setup**](docs/CLAUDE_DESKTOP_SETUP.md) - MCP setup guide
+- [**API Reference**](docs/API_REFERENCE.md) - All commands and options
+- [**Troubleshooting**](docs/TROUBLESHOOTING.md) - Common issues and solutions
 
-- [ ] Support for more browsers (Firefox, Edge)
-- [ ] Parallel notebook queries
-- [ ] Export capabilities (markdown, PDF)
-- [ ] Caching layer for repeated queries
-- [ ] VS Code extension
-- [ ] Integration tests with real NotebookLM
+## Security & Privacy
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+- ✅ All data stored locally by MCP server
+- ✅ No data sent to third parties
+- ✅ Browser session managed by MCP server
+- ✅ Credentials never logged
+- ⚠️ Consider dedicated Google account
+- ⚠️ NotebookLM terms of service apply
 
-## 📝 License
+## License
 
 MIT License - see [LICENSE](LICENSE)
 
-## 🙏 Acknowledgments
+## Related Projects
 
-- Built on [Patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) for browser automation
-- Inspired by the [NotebookLM MCP Server](https://github.com/PleasePrompto/notebooklm-mcp)
-- Created for the Claude Code plugin ecosystem
-
-## 📊 Status
-
-- ✅ Core functionality: Complete
-- ✅ Documentation: Complete  
-- ✅ Testing: Functional tests passing
-- ⚠️ Browser automation: Mocked in CI (requires Chrome)
-- 🚧 Integration tests: In progress
-
-## 🔗 Related Projects
-
-- [NotebookLM MCP Server](https://github.com/PleasePrompto/notebooklm-mcp) - Original MCP implementation
+- [NotebookLM MCP Server](https://github.com/PleasePrompto/notebooklm-mcp) - MCP server implementation
 - [Claude Code](https://www.anthropic.com/claude/code) - Official Claude Code CLI
-- [Patchright](https://github.com/Kaliiiiiiiiii-Vinyzu/patchright) - Undetectable browser automation
-
-## 📮 Contact
-
-- GitHub Issues: [Report bugs or request features](https://github.com/ray-manaloto/notebooklm-claude-integration/issues)
-- Discussions: [Ask questions or share ideas](https://github.com/ray-manaloto/notebooklm-claude-integration/discussions)
+- [wshobson/agents](https://github.com/wshobson/agents) - Plugin patterns reference
 
 ---
 

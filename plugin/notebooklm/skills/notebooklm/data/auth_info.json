@@ -1,7 +1,0 @@
-{
-  "authenticated": true,
-  "email": "user@example.com",
-  "last_login": "2025-12-29T22:40:00Z",
-  "browser_state_path": "/root/.claude/plugins/installed/notebooklm/skills/notebooklm/data/browser_state",
-  "note": "MOCK DATA - Real implementation requires Chrome + network access"
-}

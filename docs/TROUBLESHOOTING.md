@@ -4,12 +4,14 @@ Common issues and solutions for NotebookLM Claude Integration.
 
 ## Quick Diagnostics
 
-Run this command to check system health:
+Check system health with these commands:
 
 ```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-python3 run.py auth status
-python3 run.py list
+# Check authentication status
+/nlm auth
+
+# List notebooks
+/nlm list
 ```
 
 ---
@@ -20,116 +22,69 @@ python3 run.py list
 
 **Symptom:**
 ```
-Error: Unknown command '/notebook'
+Error: Unknown command '/nlm'
 ```
 
 **Solution:**
 
 ```bash
-# Check if plugin is installed
-ls ~/.claude/plugins/installed/notebooklm
+# Check if marketplace is added
+claude plugin marketplace list
 
-# If missing, reinstall
-cd /path/to/notebooklm-claude-integration
-cp -r plugin/notebooklm ~/.claude/plugins/installed/
+# If missing, add the marketplace
+claude plugin marketplace add /path/to/notebooklm-claude-integration/plugins/notebooklm
+
+# Install the plugin
+claude plugin install notebooklm@notebooklm-plugin --scope project
 
 # Restart Claude Code
+claude
 ```
 
 ---
 
-### 2. Authentication Fails
+### 2. Not Authenticated
 
 **Symptom:**
 ```
-Error: Authentication required. Run /notebook-auth setup
-```
-
-**Solutions:**
-
-**A. Clear and re-authenticate:**
-```bash
-/notebook-auth reset
-/notebook-auth setup
-```
-
-**B. Check browser state:**
-```bash
-ls ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/browser_state/
-# If corrupted, delete:
-rm -rf ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/browser_state/
-/notebook-auth setup
-```
-
-**C. Manually verify auth file:**
-```bash
-cat ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/auth_info.json
-# Should show: "authenticated": true
-```
-
----
-
-### 3. Chrome Browser Issues
-
-**Symptom:**
-```
-Error: Could not launch Chrome browser
-```
-
-**Solutions:**
-
-**A. Verify Chrome installation:**
-```bash
-which google-chrome
-which chromium-browser
-which chrome
-
-# Install if missing (Ubuntu/Debian):
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
-```
-
-**B. Check Patchright installation:**
-```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-pip show patchright
-
-# Reinstall if needed:
-pip install --upgrade patchright
-```
-
-**C. Set custom Chrome path:**
-```bash
-# Create .env file
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-cat > .env << 'EOF'
-CHROME_PATH=/usr/bin/google-chrome
-EOF
-```
-
----
-
-### 4. Import Errors
-
-**Symptom:**
-```
-ModuleNotFoundError: No module named 'patchright'
+Error: Not authenticated. Run /nlm auth setup
 ```
 
 **Solution:**
 
 ```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-pip install -r requirements.txt
-
-# If using virtual environment:
-source venv/bin/activate
-pip install -r requirements.txt
+# Run authentication setup
+/nlm auth setup
 ```
+
+A Chrome browser window will open. Complete the Google login and return to Claude Code.
 
 ---
 
-### 5. No Active Notebook
+### 3. Rate Limited
+
+**Symptom:**
+```
+Error: Rate limit exceeded (50 queries/day for free tier)
+```
+
+**Solutions:**
+
+**A. Wait for daily reset**
+- Rate limits reset at midnight UTC
+
+**B. Switch Google accounts:**
+```bash
+/nlm auth reset
+```
+Then login with a different Google account.
+
+**C. Upgrade to Google AI Pro/Ultra**
+- 5x higher limits (250 queries/day)
+
+---
+
+### 4. No Active Notebook
 
 **Symptom:**
 ```
@@ -140,333 +95,234 @@ Error: No notebook is currently active
 
 ```bash
 # List available notebooks
-/notebook list
+/nlm list
 
-# Activate one
-/notebook activate <id or name>
+# Select one
+/nlm select <name>
+```
 
-# Verify
-/notebook list
-# Should show "active": true
+If no notebooks exist:
+```bash
+/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
 ```
 
 ---
 
-### 6. Notebook Not Found
+### 5. Notebook Not Found
 
 **Symptom:**
 ```
-Error: Notebook 'abc123' not found in library
+Error: Notebook not found in library
 ```
 
-**Solutions:**
+**Solution:**
 
-**A. Check library:**
 ```bash
-/notebook list
-# Note the exact ID
+# Check available notebooks
+/nlm list
 
-/notebook activate <exact-id>
-```
-
-**B. Re-add notebook:**
-```bash
-/notebook add https://notebooklm.google.com/notebook/YOUR_ID
-/notebook activate YOUR_ID
-```
-
-**C. Check library file:**
-```bash
-cat ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/library.json
-# Verify notebook exists in JSON
+# Re-add the notebook
+/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
 ```
 
 ---
 
-### 7. Query Timeout
+### 6. Browser/Chrome Issues
 
 **Symptom:**
 ```
-Error: Query timed out after 30 seconds
+Error: Could not launch browser
 ```
 
 **Solutions:**
 
-**A. Increase timeout:**
+**A. Verify Chrome is installed:**
 ```bash
-# Edit .env
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-cat >> .env << 'EOF'
-QUERY_TIMEOUT=60000
-EOF
+# macOS
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version
+
+# Linux
+google-chrome --version
+
+# Windows
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --version
 ```
 
-**B. Check NotebookLM availability:**
+**B. Reset browser state:**
 ```bash
-# Test in regular browser
-open https://notebooklm.google.com
+/nlm auth reset
 ```
 
-**C. Simplify question:**
+**C. Check MCP server:**
+```bash
+claude mcp list
+# Should show 'notebooklm' server
+```
+
+---
+
+### 7. MCP Server Not Available
+
+**Symptom:**
+```
+Error: MCP server 'notebooklm' not found
+```
+
+**Solution:**
+
+```bash
+# Add the MCP server
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+
+# Restart Claude Code
+claude
+```
+
+---
+
+### 8. Query Timeout
+
+**Symptom:**
+```
+Error: Query timed out
+```
+
+**Solutions:**
+
+**A. Check NotebookLM availability:**
+Open https://notebooklm.google.com in a browser to verify it's working.
+
+**B. Simplify your question:**
 ```bash
 # Instead of complex multi-part questions:
-/notebook ask "What is OAuth2?"
+/nlm ask "What is OAuth2?"
 
 # Better than:
-/notebook ask "Explain OAuth2 implementation with JWT tokens, refresh tokens, and PKCE flow including security considerations"
+/nlm ask "Explain OAuth2 implementation with JWT tokens, refresh tokens, and PKCE flow including security considerations"
 ```
 
----
-
-### 8. Python Version Issues
-
-**Symptom:**
-```
-SyntaxError: invalid syntax
-```
-
-**Solution:**
-
-```bash
-# Check Python version (need 3.10+)
-python3 --version
-
-# Use correct Python
-python3.10 run.py list
-# or
-python3.11 run.py list
-
-# Update default if needed
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-```
-
----
-
-### 9. Permission Errors
-
-**Symptom:**
-```
-PermissionError: [Errno 13] Permission denied
-```
-
-**Solution:**
-
-```bash
-# Fix permissions
-chmod -R u+w ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/
-
-# Check ownership
-ls -la ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/
-```
-
----
-
-### 10. JSON Decode Errors
-
-**Symptom:**
-```
-JSONDecodeError: Expecting value: line 1 column 1
-```
-
-**Solutions:**
-
-**A. Reset library:**
-```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data/
-mv library.json library.json.backup
-cat > library.json << 'EOF'
-{
-  "notebooks": [],
-  "active_notebook": null,
-  "settings": {}
-}
-EOF
-```
-
-**B. Validate JSON:**
-```bash
-python3 -c "import json; print(json.load(open('library.json')))"
-```
-
----
-
-### 11. Network Issues
-
-**Symptom:**
-```
-Error: Could not reach NotebookLM
-```
-
-**Solutions:**
-
-**A. Check internet:**
+**C. Check internet connection:**
 ```bash
 ping google.com
-curl -I https://notebooklm.google.com
-```
-
-**B. Check proxy settings:**
-```bash
-echo $HTTP_PROXY
-echo $HTTPS_PROXY
-
-# If behind proxy, set in .env:
-HTTP_PROXY=http://proxy.company.com:8080
-HTTPS_PROXY=http://proxy.company.com:8080
-```
-
-**C. Check firewall:**
-```bash
-# Temporarily disable (Ubuntu)
-sudo ufw disable
-# Test, then re-enable
-sudo ufw enable
 ```
 
 ---
 
-### 12. Rate Limiting
+### 9. Wrong Notebook Being Queried
+
+**Symptom:**
+Answers don't match expected content.
+
+**Solution:**
+
+```bash
+# Check which notebook is active
+/nlm list
+
+# The [ACTIVE] marker shows current notebook
+
+# Switch if needed
+/nlm select "Correct Notebook Name"
+```
+
+---
+
+### 10. Authentication Expired
 
 **Symptom:**
 ```
-Error: Rate limit exceeded. Try again in 60 seconds.
+Error: Session expired
 ```
 
 **Solution:**
 
 ```bash
-# Wait the specified time
-# Rate limits:
-# - 10 queries per minute
-# - 5 add operations per minute
-# - 3 auth setups per hour
+# Re-authenticate
+/nlm auth setup
 ```
+
+Sessions typically last 30+ days but may expire sooner.
 
 ---
 
 ## Debugging
 
-### Enable Debug Mode
+### Check Authentication Status
 
 ```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-cat >> .env << 'EOF'
-DEBUG=true
-LOG_LEVEL=DEBUG
-EOF
+/nlm auth
 ```
 
-### Check Logs
-
-```bash
-# Run with verbose output
-python3 run.py ask "test question" 2>&1 | tee debug.log
-
-# Check browser console
-# (Headless mode disabled shows browser window)
-cat >> .env << 'EOF'
-HEADLESS=false
-EOF
+**Expected output:**
+```
+Authentication Status:
+- Authenticated: true
+- Ready to query notebooks
 ```
 
-### Test Individual Components
+### Check Notebook Library
 
 ```bash
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
+/nlm list
+```
 
-# Test auth
-python3 -c "from auth_manager import AuthManager; print(AuthManager().get_status())"
+**Expected output:**
+```
+Notebooks in library:
+1. [ACTIVE] My Documentation
+   Topics: api, python, fastapi
+```
 
-# Test library
-python3 -c "from notebook_manager import NotebookManager; print(NotebookManager().list_notebooks())"
+### Verify MCP Server
 
-# Test query
-python3 -c "from ask_question import ask_notebook; print(ask_notebook('test'))"
+```bash
+claude mcp list
+```
+
+**Expected output:**
+```
+notebooklm: npx -y notebooklm-mcp@latest
 ```
 
 ---
 
 ## Complete Reset
 
-If all else fails:
+If all else fails, perform a complete reset:
 
 ```bash
-# 1. Backup data
-cp -r ~/.claude/plugins/installed/notebooklm/skills/notebooklm/data ~/notebooklm-backup
+# 1. Reset authentication
+/nlm auth reset
 
-# 2. Remove plugin
-rm -rf ~/.claude/plugins/installed/notebooklm
+# 2. Remove and re-add MCP server
+claude mcp remove notebooklm
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
 
-# 3. Reinstall
-cd /path/to/notebooklm-claude-integration
-cp -r plugin/notebooklm ~/.claude/plugins/installed/
-
-# 4. Install dependencies
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-pip install -r requirements.txt
-
-# 5. Setup from scratch
+# 3. Restart Claude Code
 claude
-/notebook-auth setup
-/notebook add https://notebooklm.google.com/notebook/YOUR_ID
+
+# 4. Re-authenticate
+/nlm auth setup
+
+# 5. Re-add notebooks
+/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
 ```
 
 ---
 
 ## Getting Help
 
-### Check System Status
-
-```bash
-# Python
-python3 --version
-
-# Chrome
-google-chrome --version
-
-# Claude Code
-claude --version
-
-# Dependencies
-pip show patchright python-dotenv
-```
-
 ### Collect Debug Info
 
-```bash
-#!/bin/bash
-# debug_info.sh
+When reporting issues, include:
 
-echo "=== System Info ==="
-uname -a
-python3 --version
-google-chrome --version || chromium-browser --version
-
-echo -e "\n=== Plugin Status ==="
-ls -la ~/.claude/plugins/installed/notebooklm/
-
-echo -e "\n=== Auth Status ==="
-cd ~/.claude/plugins/installed/notebooklm/skills/notebooklm/scripts
-python3 run.py auth status
-
-echo -e "\n=== Library ==="
-python3 run.py list
-
-echo -e "\n=== Dependencies ==="
-pip show patchright python-dotenv
-
-echo -e "\n=== Environment ==="
-cat .env 2>/dev/null || echo "No .env file"
-```
+1. **Authentication status:** `/nlm auth`
+2. **Notebook list:** `/nlm list`
+3. **MCP server status:** `claude mcp list`
+4. **Error message** (full text)
+5. **Steps to reproduce**
 
 ### Report Issues
-
-Include this information:
-
-1. Debug info output (above script)
-2. Error message (full traceback)
-3. Steps to reproduce
-4. Expected vs actual behavior
 
 **GitHub:** https://github.com/ray-manaloto/notebooklm-claude-integration/issues
 
@@ -474,38 +330,42 @@ Include this information:
 
 ## Known Limitations
 
-- **Browser dependency**: Requires Chrome/Chromium
-- **Network required**: No offline mode
-- **Session persistence**: ~30 days, then re-auth needed
-- **Query timeout**: Complex queries may timeout
-- **Rate limits**: Built-in to prevent abuse
-- **No parallel queries**: One query at a time
+| Limitation | Description |
+|------------|-------------|
+| Browser dependency | Requires Chrome/Chromium |
+| Network required | No offline mode |
+| Session persistence | ~30 days before re-auth needed |
+| Rate limits | 50 queries/day (free), 250 (Pro/Ultra) |
+| One notebook at a time | Must select active notebook |
 
 ---
 
 ## FAQ
 
-**Q: Can I use Firefox instead of Chrome?**  
-A: Not currently. Patchright only supports Chromium-based browsers.
+**Q: Can I use Firefox instead of Chrome?**
+A: No. The MCP server uses Playwright which requires Chromium-based browsers.
 
-**Q: Does this work on Windows?**  
-A: Yes, but paths are different. Use `%USERPROFILE%\.claude\plugins\...`
+**Q: Does this work on Windows?**
+A: Yes, with Chrome installed.
 
-**Q: Can I use multiple Google accounts?**  
-A: Yes, but only one at a time. Use `/notebook-auth reset` to switch.
+**Q: Can I use multiple Google accounts?**
+A: Yes, but only one at a time. Use `/nlm auth reset` to switch accounts.
 
-**Q: Is my data stored remotely?**  
-A: No, everything is local. Library and auth files are on your machine.
+**Q: Is my data stored remotely?**
+A: No. All data (library, auth) is stored locally by the MCP server.
 
-**Q: Can I query multiple notebooks simultaneously?**  
-A: Not yet. You must activate one notebook at a time.
+**Q: Can I query multiple notebooks at once?**
+A: No. You must select one active notebook at a time.
 
-**Q: How do I update the plugin?**  
-A: Pull latest from GitHub and copy files again. Data files are preserved.
+**Q: How do I update the plugin?**
+A: Pull the latest from GitHub and reinstall:
+```bash
+claude plugin install notebooklm@notebooklm-plugin --scope project
+```
 
 ---
 
 For more help, see:
-- [API Reference](API_REFERENCE.md)
-- [Setup Guides](CLAUDE_CODE_SETUP.md)
-- [GitHub Issues](https://github.com/ray-manaloto/notebooklm-claude-integration/issues)
+- [API Reference](API_REFERENCE.md) - All commands and tools
+- [Claude Code Setup](CLAUDE_CODE_SETUP.md) - Installation guide
+- [Main README](../README.md) - Project overview

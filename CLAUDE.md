@@ -1,231 +1,201 @@
 # Instructions for Claude Code CLI
 
-## 🎯 Mission
+## Project Overview
 
-You are tasked with creating and initializing a GitHub repository for the **NotebookLM Claude Integration** project. This repository contains a complete integration system that allows Claude to interact with NotebookLM (Google's AI research assistant) through both Claude Desktop (MCP server) and Claude Code (Plugin).
+This repository contains a complete NotebookLM integration for Claude, providing two integration paths:
 
-## 📋 What This Repository Contains
+1. **Claude Code Plugin** (`plugins/notebooklm/`) - Commands, agents, and skills for Claude Code CLI
+2. **Claude Desktop MCP** - Direct MCP server integration
 
-### Core Components
+Both integrations use the **NotebookLM MCP Server** (`notebooklm-mcp`) which handles browser automation, authentication, and notebook queries.
 
-1. **MCP Server** (`mcp-config/`)
-   - NotebookLM MCP server for Claude Desktop
-   - Unified configuration system for managing MCP servers
-   - Scripts for deploying configs to both Desktop and Code CLI
+## Repository Structure
 
-2. **Claude Code Plugin** (`plugin/`)
-   - Complete plugin implementation for Claude Code CLI
-   - Python scripts for authentication, notebook management, and queries
-   - Slash commands: `/nlm ask`, `/nlm add`, `/nlm list`, `/nlm select`
+```
+notebooklm-claude-integration/
+├── plugins/                         # Claude Code Plugin
+│   └── notebooklm/
+│       ├── .claude-plugin/
+│       │   ├── plugin.json          # Plugin manifest
+│       │   └── marketplace.json     # Marketplace manifest
+│       ├── commands/
+│       │   └── nlm.md               # /nlm command (ask, add, list, select, auth)
+│       ├── agents/
+│       │   └── research-agent.md    # Proactive research agent
+│       ├── skills/
+│       │   └── notebooklm-patterns/
+│       │       └── SKILL.md         # MCP tools reference & troubleshooting
+│       └── README.md
+│
+├── mcp-config/                      # MCP configuration utilities
+│   ├── servers.json                 # Unified MCP server config
+│   ├── install-desktop.sh           # Deploy to Claude Desktop
+│   ├── install-code.sh              # Deploy to Claude Code
+│   └── update-all.sh                # Update both environments
+│
+├── docs/                            # Documentation
+│   ├── CLAUDE_DESKTOP_SETUP.md
+│   ├── CLAUDE_CODE_SETUP.md
+│   ├── API_REFERENCE.md
+│   └── TROUBLESHOOTING.md
+│
+├── examples/                        # Usage examples
+│
+└── tests/                           # Test suite
+```
 
-3. **Documentation** (`docs/`)
-   - Architecture diagrams
-   - API documentation
-   - Usage guides
+## Plugin Commands
 
-4. **Examples** (`examples/`)
-   - Sample workflows
-   - Use case demonstrations
-   - Integration patterns
+The plugin provides a single `/nlm` command with subcommands:
 
-## 🚀 What You Need to Do
+| Command | Description |
+|---------|-------------|
+| `/nlm ask <question>` | Ask a question to the active notebook |
+| `/nlm add <url>` | Add a notebook to your library (auto-selects as active) |
+| `/nlm list` | List all notebooks in your library |
+| `/nlm select <name>` | Set active notebook for queries |
+| `/nlm auth` | Check authentication status |
+| `/nlm auth setup` | First-time authentication (opens browser) |
+| `/nlm auth reset` | Clear and re-authenticate |
 
-### Step 1: Verify GitHub Token
+## MCP Tools Reference
 
-Check that the GitHub MCP server is configured:
+The plugin uses these NotebookLM MCP tools:
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__notebooklm__ask_question` | Query a notebook |
+| `mcp__notebooklm__add_notebook` | Add notebook to library |
+| `mcp__notebooklm__list_notebooks` | List all notebooks |
+| `mcp__notebooklm__select_notebook` | Set active notebook |
+| `mcp__notebooklm__get_notebook` | Get notebook details |
+| `mcp__notebooklm__search_notebooks` | Search by query |
+| `mcp__notebooklm__get_health` | Check auth status |
+| `mcp__notebooklm__setup_auth` | Initial authentication |
+| `mcp__notebooklm__re_auth` | Reset authentication |
+
+## Plugin Installation
+
+### Prerequisites
+
+1. **NotebookLM MCP Server** - Required for browser automation:
+   ```bash
+   claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+   ```
+
+2. **Google Chrome** - Required for Playwright automation
+
+3. **Google Account** - With NotebookLM access
+
+### Installation Steps
 
 ```bash
-# List MCP servers
-claude mcp list
+# 1. Add the marketplace
+claude plugin marketplace add ./plugins/notebooklm
 
-# You should see 'github' in the list
-# If not, the user needs to run the deploy script again
+# 2. Install the plugin (project scope)
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 3. Restart Claude Code
+claude
+
+# 4. First-time authentication
+/nlm auth setup
 ```
 
-### Step 2: Create GitHub Repository
+### Installation Scopes
 
-Create a new public repository under the organization: **ray-manaloto**
+- **Project scope** (recommended): Available in current project
+- **User scope**: Available in all projects
+- **Local scope**: Project-specific, gitignored
 
-**Repository Details:**
-- **Name:** `notebooklm-claude-integration`
-- **Description:** `NotebookLM integration for Claude Desktop (MCP) and Claude Code (Plugin) - unified research assistant with notebook library management`
-- **Visibility:** Public
-- **Initialize:** Yes (with README)
-- **Organization:** ray-manaloto
+## Architecture
 
-**Command to execute:**
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│   Claude    │────────>│   Plugin     │────────>│ NotebookLM  │
+│  Code CLI   │         │  Commands    │         │ MCP Server  │
+└─────────────┘         └──────────────┘         └─────────────┘
+                               │                        │
+                               v                        v
+                        ┌──────────────┐         ┌─────────────┐
+                        │ MCP Tools    │         │  Playwright │
+                        │ - ask_question│        │   Browser   │
+                        │ - add_notebook│        └─────────────┘
+                        │ - list_notebooks│             │
+                        │ - select_notebook│            v
+                        └──────────────┘         ┌─────────────┐
+                                                 │ NotebookLM  │
+                                                 │   (Gemini)  │
+                                                 └─────────────┘
+```
+
+The plugin uses MCP tools to communicate with the NotebookLM MCP server, which handles:
+- Browser automation via Playwright
+- Google authentication
+- Session management
+- Notebook library storage
+
+## Research Agent
+
+The plugin includes a research agent (`research-agent.md`) that triggers proactively when you ask to:
+- "Research" a topic
+- "Investigate" something
+- "Explore" a concept
+- Get a "deep dive" on a subject
+
+Example:
+```
+Research authentication patterns from my documentation
+```
+
+The agent will:
+1. Query your active notebook
+2. Generate follow-up questions
+3. Synthesize a comprehensive answer
+
+## Troubleshooting
+
+### Not Authenticated
 ```bash
-# Use the github MCP tool to create the repository
-# Target: https://github.com/ray-manaloto/notebooklm-claude-integration
+/nlm auth setup
 ```
 
-### Step 3: Initialize Git Repository Locally
+### Rate Limited (50 queries/day free tier)
+- Wait for daily reset, or
+- Use `/nlm auth reset` to switch Google accounts
+- Consider Google AI Pro/Ultra for 5x limits
 
-The current directory contains all the files. Initialize git:
-
+### Wrong Notebook Being Queried
 ```bash
-cd ~/Downloads/notebooklm-claude-integration
-git init
-git add .
-git commit -m "Initial commit: NotebookLM Claude Integration
-
-- MCP server for Claude Desktop
-- Plugin system for Claude Code CLI
-- Unified configuration management
-- Complete documentation and examples
-- Authentication and session management
-- Notebook library system"
+/nlm list           # See all notebooks
+/nlm select <name>  # Switch to correct one
 ```
 
-### Step 4: Push to GitHub
+### Plugin Not Loading
+1. Verify installation:
+   ```bash
+   claude plugin marketplace list
+   ```
+2. Check plugin is installed with correct scope
+3. Restart Claude Code
 
-Connect to the remote repository and push:
+## Limits
 
-```bash
-# Add remote (replace with actual repo URL from Step 2)
-git remote add origin https://github.com/ray-manaloto/notebooklm-claude-integration.git
+| Resource | Free Tier | Pro/Ultra |
+|----------|-----------|-----------|
+| Daily Queries | 50 | 250 |
+| Notebooks | 100 | 500 |
+| Sources per Notebook | 50 | 100 |
 
-# Push to main branch
-git branch -M main
-git push -u origin main
-```
+## GitHub Repository
 
-### Step 5: Verify Repository
+- **URL**: https://github.com/ray-manaloto/notebooklm-claude-integration
+- **License**: MIT
+- **Version**: 1.0.0
 
-Check that everything is uploaded:
+## Related Projects
 
-1. Visit: https://github.com/ray-manaloto/notebooklm-claude-integration
-2. Verify all directories are present:
-   - `/mcp-config/` - MCP server configurations
-   - `/plugin/` - Claude Code plugin
-   - `/docs/` - Documentation
-   - `/examples/` - Usage examples
-   - `/tests/` - Test files
-3. Verify README.md displays correctly
-4. Check that LICENSE is present
-
-### Step 6: Create Initial Release (Optional)
-
-If everything looks good, create a release:
-
-```bash
-# Tag the initial release
-git tag -a v1.0.0 -m "Initial release: NotebookLM Claude Integration v1.0.0"
-git push origin v1.0.0
-```
-
-## 📚 Repository Purpose & Context
-
-### What Problem Does This Solve?
-
-This integration bridges Claude (Anthropic's AI) with NotebookLM (Google's AI research assistant), creating a powerful research workflow:
-
-1. **Knowledge Management:** Users can maintain multiple NotebookLM notebooks as specialized knowledge bases
-2. **Unified Access:** Access NotebookLM from both Claude Desktop and Claude Code CLI
-3. **Session Context:** Maintains conversation history within NotebookLM sessions
-4. **Library System:** Organize notebooks by topic, use case, and content type
-
-### Key Features
-
-**For Claude Desktop (MCP):**
-- Ask questions to NotebookLM notebooks
-- Manage notebook library (add, list, search, select)
-- Session management for contextual conversations
-- Browser automation for authentication
-
-**For Claude Code (Plugin):**
-- Slash commands for quick access
-- CLI-friendly workflows
-- Same library and session management
-- Optimized for development workflows
-
-### Target Users
-
-- Researchers using NotebookLM for knowledge management
-- Developers integrating AI research tools
-- Teams managing multiple documentation sources
-- Anyone wanting to combine Claude's capabilities with NotebookLM's research features
-
-### Technical Architecture
-
-```
-User Request
-    ↓
-Claude (Desktop/Code)
-    ↓
-MCP Server / Plugin Layer
-    ↓
-NotebookLM Automation
-    ↓
-Browser (Playwright)
-    ↓
-NotebookLM.google.com
-    ↓
-AI-powered Research Results
-```
-
-## 🔧 Configuration Files
-
-The repository includes unified MCP configuration:
-
-- **`mcp-config/servers.json`** - Single source of truth for all MCP servers
-- **`mcp-config/install-desktop.sh`** - Deploy to Claude Desktop
-- **`mcp-config/install-code.sh`** - Deploy to Claude Code
-- **`mcp-config/update-all.sh`** - Update both environments
-
-Users edit one file, deploy everywhere.
-
-## 📖 Important Documentation
-
-Make sure these files are prominent in the repository:
-
-1. **README.md** - Main project overview and quick start
-2. **MCP_CONFIG_BEST_PRACTICES.md** - Modern best practices for MCP configuration (Dec 2024)
-3. **MCP_CONFIG_SOLUTION.md** - Technical solution details
-4. **WHAT_TO_DO.md** - User setup instructions
-5. **docs/ARCHITECTURE.md** - System architecture
-6. **LICENSE** - MIT License
-
-## ✅ Success Criteria
-
-After completing these tasks, the repository should:
-
-- [x] Be publicly accessible at https://github.com/ray-manaloto/notebooklm-claude-integration
-- [x] Have a clear, comprehensive README
-- [x] Include all source code and documentation
-- [x] Have proper LICENSE file
-- [x] Be ready for users to clone and use immediately
-- [x] Have initial commit with descriptive message
-
-## 🎯 Final Note
-
-This repository represents a complete, production-ready integration between Claude and NotebookLM. The code has been tested, documented, and packaged for immediate use. Your job is to get it onto GitHub so the user can:
-
-1. Share it with others
-2. Version control future improvements  
-3. Contribute to the open-source community
-4. Preserve their work in a permanent location
-
-## 💡 Tips for Success
-
-- Use the GitHub MCP connector that was just configured
-- Verify each step before proceeding
-- If authentication fails, inform the user to check their GitHub token
-- Provide the final repository URL when complete
-- Offer to create additional documentation or setup GitHub Actions if requested
-
-## 🚨 Troubleshooting
-
-**If GitHub MCP is not available:**
-- User needs to restart Claude Code CLI
-- User should verify `~/.claude.json` has the github server configured
-- User may need to run `claude mcp add` manually
-
-**If git push fails:**
-- Check if repository was created successfully
-- Verify remote URL is correct
-- Ensure user has write permissions to ray-manaloto organization
-
----
-
-**You've got this! Create that repository and make it shine.** 🚀
+- [NotebookLM MCP Server](https://github.com/PleasePrompto/notebooklm-mcp) - MCP server implementation
+- [Claude Code](https://www.anthropic.com/claude/code) - Official Claude Code CLI
+- [wshobson/agents](https://github.com/wshobson/agents) - Plugin patterns reference
