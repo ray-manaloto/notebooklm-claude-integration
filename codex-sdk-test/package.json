@@ -1,0 +1,13 @@
+{
+  "name": "codex-sdk-notebooklm-test",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:notebooklm": "node run-notebooklm-test.mjs",
+    "test:notebooklm-cleanup": "node run-notebooklm-cleanup-query.mjs"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "^0.77.0"
+  }
+}
