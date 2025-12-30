@@ -15,6 +15,31 @@ Both allow you to query your NotebookLM notebooks directly from Claude, getting 
 
 ## Quick Start
 
+### AI Agent Step-by-Step (Codex CLI)
+
+Use this sequence when an agent needs to verify the NotebookLM integration end-to-end.
+
+1. Install and enable the MCP server:
+   ```bash
+   codex mcp add notebooklm -- npx -y notebooklm-mcp@latest
+   ```
+2. Authenticate once (browser login). The auth layer will persist cookies:
+   ```bash
+   codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth and wait."
+   ```
+3. Run the full E2E test (downloads the skill from GitHub into a temp repo and queries a notebook):
+   ```bash
+   make codex-skill-e2e
+   ```
+4. Optional overrides:
+   ```bash
+   NOTEBOOK_URL="https://notebooklm.google.com/notebook/<id>" \
+   NOTEBOOK_NAME="My Test Notebook" \
+   NOTEBOOK_DESC="Notebook for testing Codex + NotebookLM." \
+   NOTEBOOK_ID="my-test-notebook" \
+   make codex-skill-e2e
+   ```
+
 ### For Claude Code (Plugin)
 
 ```bash
