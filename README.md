@@ -103,6 +103,29 @@ notebooklm-claude-integration/
 └── tests/                           # Test suite
 ```
 
+## Codex Skill E2E Test
+
+Use this script to download the skill from GitHub into a temp repo, load it, and run an end-to-end NotebookLM query through Codex CLI.
+
+Prereqs:
+- `codex` CLI installed
+- NotebookLM MCP server added: `codex mcp add notebooklm -- npx -y notebooklm-mcp@latest`
+- NotebookLM authentication completed at least once
+
+Run:
+```bash
+scripts/codex-skill-e2e.sh
+```
+
+Optional overrides:
+```bash
+NOTEBOOK_URL="https://notebooklm.google.com/notebook/<id>" \
+NOTEBOOK_NAME="My Test Notebook" \
+NOTEBOOK_DESC="Notebook for testing Codex + NotebookLM." \
+NOTEBOOK_ID="my-test-notebook" \
+scripts/codex-skill-e2e.sh
+```
+
 ## Plugin Commands
 
 | Command | Description |
