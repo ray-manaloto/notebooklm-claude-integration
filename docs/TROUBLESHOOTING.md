@@ -50,14 +50,31 @@ claude
 Error: Not authenticated. Run /nlm auth setup
 ```
 
-**Solution:**
+**Solutions (try in order):**
 
+**A. Best: Use Chrome Remote Debugging (no popups)**
+```bash
+# Start Chrome with remote debugging
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# Login to NotebookLM in Chrome (one-time)
+# Navigate to https://notebooklm.google.com
+
+# Now queries use your existing session automatically!
+```
+
+**B. Alternative: Interactive setup**
 ```bash
 # Run authentication setup
 /nlm auth setup
 ```
-
 A Chrome browser window will open. Complete the Google login and return to Claude Code.
+
+**C. Check status and available backends:**
+```bash
+/nlm auth
+# Shows: CDP, Keychain, Persistent, Manual backend status
+```
 
 ---
 
@@ -328,15 +345,71 @@ When reporting issues, include:
 
 ---
 
+## Authentication Backends
+
+The plugin supports multiple authentication backends, tried in priority order:
+
+| Backend | Priority | Platform | Description |
+|---------|----------|----------|-------------|
+| **CDP** | 1 | All | Connect to Chrome with `--remote-debugging-port=9222` |
+| **Keychain** | 2 | macOS | Stored cookies in macOS Keychain |
+| **Persistent** | 3 | All | Playwright browser profile at `~/.notebooklm-auth` |
+| **Manual** | 4 | All | Interactive browser login (fallback) |
+
+### Setting Up CDP (Recommended)
+
+```bash
+# macOS
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# Windows
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
+
+# Linux
+google-chrome --remote-debugging-port=9222
+
+# Verify it's working
+curl http://localhost:9222/json/version
+```
+
+**Tip:** Add an alias to your shell profile:
+```bash
+alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
+```
+
+### Keychain Storage (macOS)
+
+Cookies are automatically saved to macOS Keychain after successful login.
+
+```bash
+# Check if cookies are stored
+security find-generic-password -s "notebooklm-claude-auth" -a "$USER-cookies"
+
+# Clear stored cookies
+security delete-generic-password -s "notebooklm-claude-auth" -a "$USER-cookies"
+```
+
+### Persistent Profile
+
+Browser state stored at `~/.notebooklm-auth/chrome-profile/`.
+
+```bash
+# Clear persistent profile
+rm -rf ~/.notebooklm-auth/chrome-profile
+```
+
+---
+
 ## Known Limitations
 
 | Limitation | Description |
 |------------|-------------|
 | Browser dependency | Requires Chrome/Chromium |
 | Network required | No offline mode |
-| Session persistence | ~30 days before re-auth needed |
+| Session persistence | ~30 days before re-auth needed (Keychain extends this) |
 | Rate limits | 50 queries/day (free), 250 (Pro/Ultra) |
 | One notebook at a time | Must select active notebook |
+| CDP single instance | Only one Chrome can use debugging port |
 
 ---
 

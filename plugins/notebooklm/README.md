@@ -145,13 +145,52 @@ The agent will:
 | Notebooks | 100 | 500 |
 | Sources per Notebook | 50 | 100 |
 
+## Authentication Options
+
+The plugin supports multiple authentication backends, tried in priority order:
+
+| Backend | Priority | Description | Best For |
+|---------|----------|-------------|----------|
+| **CDP** | 1 | Connect to existing Chrome session | Daily use - seamless |
+| **Keychain** | 2 | macOS Keychain stored cookies | Headless/automation |
+| **Persistent** | 3 | Playwright browser profile | Cross-platform fallback |
+| **Manual** | 4 | Interactive browser login | First-time setup |
+
+### Recommended Setup (Best Experience)
+
+```bash
+# 1. Start Chrome with remote debugging
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# 2. Login to NotebookLM in Chrome (one-time)
+# Navigate to https://notebooklm.google.com and login
+
+# 3. Now queries use your existing session - no popups!
+/nlm ask "How do I implement OAuth?"
+```
+
+### Add to Shell Profile (Optional)
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
+
+# Then just run: chrome-debug
+```
+
 ## Troubleshooting
 
 ### Authentication Issues
 
 ```bash
-# Check status
+# Check status (shows all backends)
 /nlm auth
+
+# View CDP setup instructions
+/nlm auth cdp
+
+# Check keychain status (macOS)
+/nlm auth keychain
 
 # Setup (opens browser)
 /nlm auth setup
@@ -193,6 +232,18 @@ plugins/notebooklm/
 ├── skills/
 │   └── notebooklm-patterns/
 │       └── SKILL.md         # MCP tools & troubleshooting
+└── README.md
+
+auth-layer/                   # Multi-backend authentication layer
+├── src/
+│   ├── backends/
+│   │   ├── cdp.ts           # Chrome DevTools Protocol
+│   │   ├── keychain.ts      # macOS Keychain storage
+│   │   └── persistent.ts    # Playwright persistent context
+│   ├── auth-manager.ts      # Main orchestrator
+│   ├── cli.ts               # nlm-auth CLI tool
+│   └── types.ts             # TypeScript types
+├── package.json
 └── README.md
 ```
 

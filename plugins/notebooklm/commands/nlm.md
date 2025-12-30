@@ -26,7 +26,7 @@ Query your Google NotebookLM notebooks for source-grounded, citation-backed answ
 | `add` | `/nlm add <url>` | Add a notebook to your library |
 | `list` | `/nlm list` | List all notebooks in library |
 | `select` | `/nlm select <name or id>` | Set active notebook |
-| `auth` | `/nlm auth [setup\|status\|reset]` | Manage authentication |
+| `auth` | `/nlm auth [setup\|status\|reset\|cdp\|keychain]` | Manage authentication |
 
 ## Arguments
 
@@ -144,14 +144,22 @@ When user runs `/nlm auth [action]`:
 
 **`/nlm auth` or `/nlm auth status`:**
 1. Use `get_health` to check authentication status
-2. Display status:
+2. Display status with backend information:
 
 ```markdown
-## NotebookLM Status
+## NotebookLM Authentication Status
 
 - **Authenticated:** Yes/No
 - **Active Sessions:** X
 - **Headless Mode:** Yes/No
+
+### Authentication Backends (tried in order)
+| Backend | Status | Description |
+|---------|--------|-------------|
+| CDP | ✅/❌ | Chrome with --remote-debugging-port=9222 |
+| Keychain | ✅/❌ | macOS Keychain stored cookies |
+| Persistent | ✅/❌ | Browser profile at ~/.notebooklm-auth |
+| Manual | ⚪ | Interactive browser login (fallback) |
 ```
 
 **`/nlm auth setup`:**
@@ -162,6 +170,56 @@ When user runs `/nlm auth [action]`:
 **`/nlm auth reset`:**
 1. Use `re_auth` tool to clear and re-authenticate
 2. Inform user about the reset process
+
+**`/nlm auth cdp`:**
+Show instructions for Chrome CDP setup (best authentication experience):
+
+```markdown
+## Chrome Remote Debugging Setup
+
+For seamless authentication, start Chrome with remote debugging:
+
+**macOS:**
+\`\`\`bash
+open -a "Google Chrome" --args --remote-debugging-port=9222
+\`\`\`
+
+**Windows:**
+\`\`\`bash
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222
+\`\`\`
+
+**Linux:**
+\`\`\`bash
+google-chrome --remote-debugging-port=9222
+\`\`\`
+
+**Benefits:**
+- Uses your existing Google login (no separate auth needed)
+- Faster - no browser automation delay
+- Works with your Chrome extensions
+
+**Tip:** Add an alias to your shell profile:
+\`\`\`bash
+alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
+\`\`\`
+```
+
+**`/nlm auth keychain`:**
+Show macOS Keychain status:
+
+```markdown
+## Keychain Authentication
+
+Cookies are securely stored in macOS Keychain.
+
+**Status:** Stored/Not Stored
+**Saved At:** [timestamp]
+
+**Commands:**
+- Cookies auto-save after successful login
+- Clear with: `/nlm auth reset`
+```
 
 ## Response Format
 
@@ -181,7 +239,10 @@ Always format responses with clear headers and structure:
 
 ## Tips
 
+- **Best auth experience:** Run `/nlm auth cdp` for Chrome remote debugging setup
 - First time? Run `/nlm auth setup` to authenticate
 - Add notebooks with descriptive URLs
 - Use `/nlm list` to see all available notebooks
 - The active notebook is used for all `/nlm ask` queries
+- On macOS, cookies are automatically saved to Keychain for headless use
+- Run Chrome with `--remote-debugging-port=9222` for seamless session reuse

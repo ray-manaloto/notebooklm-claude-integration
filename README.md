@@ -60,7 +60,7 @@ Add my notebook: https://notebooklm.google.com/notebook/YOUR_ID
 
 ```
 notebooklm-claude-integration/
-├── plugins/                         # Claude Code Plugin (NEW)
+├── plugins/                         # Claude Code Plugin
 │   └── notebooklm/
 │       ├── .claude-plugin/
 │       │   ├── plugin.json          # Plugin manifest
@@ -73,6 +73,18 @@ notebooklm-claude-integration/
 │       │   └── notebooklm-patterns/
 │       │       └── SKILL.md         # MCP tools reference & troubleshooting
 │       └── README.md
+│
+├── auth-layer/                      # Multi-backend authentication (NEW)
+│   ├── src/
+│   │   ├── backends/
+│   │   │   ├── cdp.ts               # Chrome DevTools Protocol
+│   │   │   ├── keychain.ts          # macOS Keychain storage
+│   │   │   └── persistent.ts        # Playwright persistent context
+│   │   ├── auth-manager.ts          # Main orchestrator
+│   │   ├── cli.ts                   # nlm-auth CLI tool
+│   │   └── types.ts                 # TypeScript types
+│   ├── package.json
+│   └── README.md
 │
 ├── mcp-config/                      # MCP configuration utilities
 │   ├── servers.json                 # Unified MCP server config
@@ -197,11 +209,47 @@ claude plugin install notebooklm@notebooklm-plugin --scope user
 claude plugin install notebooklm@notebooklm-plugin --scope local
 ```
 
+## Authentication Options
+
+The plugin supports multiple authentication backends (tried in priority order):
+
+| Backend | Platform | Description |
+|---------|----------|-------------|
+| **CDP** | All | Connect to existing Chrome session (best UX) |
+| **Keychain** | macOS | Stored cookies in system keychain |
+| **Persistent** | All | Playwright browser profile |
+| **Manual** | All | Interactive browser login (fallback) |
+
+### Recommended: Chrome Remote Debugging (No Popups!)
+
+```bash
+# 1. Start Chrome with remote debugging
+open -a "Google Chrome" --args --remote-debugging-port=9222  # macOS
+
+# 2. Login to NotebookLM in Chrome (one-time)
+# Navigate to https://notebooklm.google.com and login with Google
+
+# 3. Now queries use your existing session - no popups!
+/nlm ask "How do I implement OAuth?"
+```
+
+**Tip:** Add to `~/.zshrc` or `~/.bashrc`:
+```bash
+alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
+```
+
 ## Troubleshooting
 
 ### Not Authenticated
 ```bash
+# Best: Start Chrome with remote debugging first
+open -a "Google Chrome" --args --remote-debugging-port=9222
+
+# Or: Interactive setup
 /nlm auth setup
+
+# Check status
+/nlm auth
 ```
 
 ### Rate Limited (50 queries/day free tier)

@@ -121,6 +121,7 @@ Returns:
 - active_sessions: count
 - headless: boolean
 - stealth_enabled: boolean
+- auto_login_enabled: boolean
 
 #### `setup_auth`
 Initial authentication setup. Opens browser for Google login.
@@ -136,6 +137,53 @@ Reset and re-authenticate. Use when:
 - Rate limit reached (50 queries/day free tier)
 - Switching Google accounts
 - Authentication broken
+
+### Authentication Backends (Auth Layer)
+
+The auth layer tries multiple backends in priority order for the best authentication experience:
+
+#### 1. CDP (Chrome DevTools Protocol) - Priority 1
+Connect to existing Chrome browser that's already logged into Google.
+
+**Setup:**
+```bash
+# Start Chrome with remote debugging
+open -a "Google Chrome" --args --remote-debugging-port=9222
+```
+
+**Benefits:**
+- Uses existing Google login (no separate auth needed)
+- Fastest - no browser automation delays
+- Works with your Chrome extensions
+
+#### 2. Keychain (macOS only) - Priority 2
+Securely stores authentication cookies in macOS Keychain.
+
+**How it works:**
+- Cookies automatically saved after successful login
+- Retrieved on next use without re-authentication
+- Encrypted by macOS (requires login password)
+
+**Check status:**
+```bash
+security find-generic-password -s "notebooklm-claude-auth" -a "$USER-cookies" -w
+```
+
+#### 3. Persistent Context - Priority 3
+Playwright persistent browser profile at `~/.notebooklm-auth/chrome-profile/`.
+
+**How it works:**
+- Maintains browser state (cookies, localStorage) across sessions
+- Falls back to this if CDP and Keychain unavailable
+
+#### 4. Manual Login - Fallback
+Interactive browser login when all other backends fail.
+
+**Flow:**
+1. Opens Chrome window
+2. Navigates to NotebookLM
+3. User completes Google login
+4. Cookies saved for future use
 
 ### Session Tools
 
@@ -205,26 +253,45 @@ For follow-up questions in the same context:
 
 **Problem: "Not authenticated" error**
 ```
-Solution:
-1. Run get_health() to confirm status
-2. Run setup_auth() to open browser login
-3. Complete Google login in browser
-4. Verify with get_health()
+Solution (try in order):
+
+1. Best: Start Chrome with remote debugging
+   open -a "Google Chrome" --args --remote-debugging-port=9222
+   Then login to NotebookLM in Chrome
+
+2. Alternative: Interactive login
+   Run setup_auth() to open browser login
+   Complete Google login in browser
+
+3. Verify: get_health() to confirm status
 ```
 
 **Problem: Authentication keeps failing**
 ```
 Solution:
 1. Close ALL Chrome/Chromium instances
-2. Run cleanup_data(confirm=true, preserve_library=true)
-3. Run setup_auth() for fresh start
+2. Clear stored auth:
+   - Keychain: security delete-generic-password -s "notebooklm-claude-auth" -a "$USER-cookies"
+   - Profile: rm -rf ~/.notebooklm-auth/chrome-profile
+3. Run cleanup_data(confirm=true, preserve_library=true)
+4. Run setup_auth() for fresh start
 ```
 
 **Problem: Session expired**
 ```
 Solution:
-1. Run re_auth() to clear and re-authenticate
-2. Sessions typically last 30+ days
+1. Try CDP first - start Chrome with remote debugging
+2. If not available, run re_auth() to clear and re-authenticate
+3. Sessions in Keychain typically last 30+ days
+```
+
+**Problem: CDP not detecting Chrome**
+```
+Solution:
+1. Ensure Chrome started with --remote-debugging-port=9222
+2. Check if port is listening: curl http://localhost:9222/json/version
+3. Only one Chrome instance can use debugging port at a time
+4. Close other Chrome instances and restart with flag
 ```
 
 ### Rate Limiting
