@@ -1,0 +1,19 @@
+{
+  "notebooks": [
+    {
+      "id": "8e98a4d8-f778-4dfc-88e8-2d59e48b1069",
+      "url": "https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069",
+      "name": "Raymond's Notebook",
+      "description": "My knowledge base",
+      "topics": [
+        "documentation",
+        "research"
+      ],
+      "sources_count": 5,
+      "added_date": "2025-12-29T22:40:00Z",
+      "last_accessed": "2025-12-29T22:40:00Z",
+      "active": true,
+      "note": "MOCK DATA - Real implementation would discover actual content"
+    }
+  ]
+}

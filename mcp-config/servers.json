@@ -1,0 +1,33 @@
+{
+  "notebooklm": {
+    "command": "npx",
+    "args": ["-y", "notebooklm-mcp@latest"],
+    "description": "Query NotebookLM notebooks with citation-backed answers"
+  },
+  "github": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+    },
+    "description": "GitHub integration for repos, PRs, issues"
+  },
+  "brave-search": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+    "env": {
+      "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+    },
+    "description": "Web search with Brave Search API"
+  },
+  "context7": {
+    "command": "npx",
+    "args": ["-y", "context7-mcp"],
+    "description": "Up-to-date documentation for popular libraries"
+  },
+  "filesystem": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/ray"],
+    "description": "File system access with permission controls"
+  }
+}

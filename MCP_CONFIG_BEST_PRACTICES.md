@@ -1,0 +1,439 @@
+# MCP Server Configuration: Modern Best Practices (2024/2025)
+
+## TL;DR - The Reality
+
+❌ **You CANNOT directly share one config file** between Claude Desktop and Claude Code  
+✅ **You CAN centralize MCP server definitions** using modern approaches  
+✅ **Best Practice: Single source of truth with scope-based distribution**
+
+---
+
+## 📁 Config File Locations (Dec 2024)
+
+### Claude Desktop
+```
+macOS:   ~/Library/Application Support/Claude/claude_desktop_config.json
+Windows: %APPDATA%\Claude\claude_desktop_config.json
+Linux:   ~/.config/Claude/claude_desktop_config.json
+```
+
+### Claude Code
+```
+User scope:    ~/.claude.json
+Project scope: <project>/.mcp.json
+```
+
+**Key Insight:** Different file locations and potentially different formats mean you can't use symlinks to share one file.
+
+---
+
+## 🎯 Modern Best Practice: Centralized Definition with Scoped Distribution
+
+### Strategy 1: Single Source + Installation Script (Recommended)
+
+Create a **single source of truth** for your MCP servers, then distribute to both Claude Desktop and Claude Code:
+
+```bash
+# Your centralized MCP definitions
+~/mcp-servers/
+├── mcp-servers.json          # Source of truth
+├── install-desktop.sh         # Deploy to Desktop
+└── install-code.sh            # Deploy to Code
+```
+
+**mcp-servers.json** (Your single source):
+```json
+{
+  "github": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+    }
+  },
+  "notebooklm": {
+    "command": "npx",
+    "args": ["-y", "notebooklm-mcp@latest"]
+  },
+  "brave-search": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+    "env": {
+      "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+    }
+  }
+}
+```
+
+**install-desktop.sh**:
+```bash
+#!/bin/bash
+# Deploy to Claude Desktop
+
+CONFIG_FILE="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# Create config with mcpServers wrapper
+jq '{mcpServers: .}' ~/mcp-servers/mcp-servers.json > "$CONFIG_FILE"
+
+echo "✅ Installed to Claude Desktop"
+echo "Restart Claude Desktop to apply changes"
+```
+
+**install-code.sh**:
+```bash
+#!/bin/bash
+# Deploy to Claude Code (user scope)
+
+CONFIG_FILE="$HOME/.claude.json"
+
+# Read servers from source
+SERVERS=$(cat ~/mcp-servers/mcp-servers.json)
+
+# Add each server to Claude Code
+for server in $(echo "$SERVERS" | jq -r 'keys[]'); do
+    SERVER_CONFIG=$(echo "$SERVERS" | jq -c ".\"$server\"")
+    
+    # Use Claude Code CLI to add
+    claude mcp add-json "$server" "$SERVER_CONFIG" --scope user
+done
+
+echo "✅ Installed to Claude Code"
+echo "Run 'claude mcp list' to verify"
+```
+
+**Why This Works:**
+- ✅ Single source of truth
+- ✅ Easy updates (edit one file, run two scripts)
+- ✅ Version control friendly
+- ✅ Environment variable support
+- ✅ Team sharing via git
+
+---
+
+### Strategy 2: Environment Variable Approach
+
+Use environment variables for all sensitive data, making configs safe to share:
+
+**~/.zshrc** or **~/.bashrc**:
+```bash
+# MCP Server Credentials
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxx"
+export BRAVE_API_KEY="BSA_xxxxxxxxxxxx"
+export NOTEBOOKLM_SESSION="session_data"
+```
+
+**Claude Desktop Config** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**Claude Code Config** (`~/.claude.json`):
+```bash
+# Install using CLI with env vars
+claude mcp add github \
+  --transport stdio \
+  --scope user \
+  -- npx -y @modelcontextprotocol/server-github \
+  --env GITHUB_PERSONAL_ACCESS_TOKEN="${GITHUB_TOKEN}"
+```
+
+**Benefits:**
+- ✅ Credentials separate from config
+- ✅ Configs can be committed to git
+- ✅ Easy credential rotation
+- ⚠️ Requires shell restart for env var changes
+
+---
+
+### Strategy 3: Project-Specific MCP (Claude Code Only)
+
+Claude Code supports project-specific MCP servers via `.mcp.json` in your project root.
+
+```bash
+my-project/
+├── .mcp.json              # Project-specific MCP servers
+├── .git/
+└── src/
+```
+
+**.mcp.json**:
+```json
+{
+  "mcpServers": {
+    "project-docs": {
+      "command": "npx",
+      "args": ["-y", "context7-mcp"]
+    },
+    "project-db": {
+      "command": "node",
+      "args": ["./scripts/db-mcp-server.js"]
+    }
+  }
+}
+```
+
+**When to use:**
+- ✅ Team projects (committed to git)
+- ✅ Project-specific tools
+- ✅ Different MCP needs per project
+- ❌ Personal tools (use `--scope user` instead)
+
+---
+
+## 🔧 Modern MCP Installation Methods (Claude Code)
+
+### Method 1: CLI Wizard (Interactive)
+```bash
+claude mcp add github --scope user
+# Interactive prompts walk you through setup
+```
+
+### Method 2: Direct JSON (Best for automation)
+```bash
+claude mcp add-json github '{
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-github"],
+  "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_xxx"}
+}' --scope user
+```
+
+### Method 3: Direct Config Edit (Most control)
+Edit `~/.claude.json` directly for complex setups with lots of parameters
+
+```bash
+code ~/.claude.json
+```
+
+---
+
+## 📊 Comparison Table
+
+| Approach | Pros | Cons | Best For |
+|----------|------|------|----------|
+| **Single Source + Scripts** | ✅ One source of truth<br>✅ Easy updates<br>✅ Version control | ⚠️ Need to run scripts<br>⚠️ Two files to maintain | Teams, multiple machines |
+| **Environment Variables** | ✅ Secure<br>✅ Git-friendly<br>✅ Easy rotation | ⚠️ Shell restart needed<br>⚠️ Platform differences | Production, security-focused |
+| **Project .mcp.json** | ✅ Team sharing<br>✅ Project-specific<br>✅ Automatic | ⚠️ Code only<br>⚠️ Duplicate for Desktop | Development teams |
+| **Direct Edit** | ✅ Full control<br>✅ No CLI needed<br>✅ Fast | ⚠️ Manual sync<br>⚠️ Error-prone | Power users, debugging |
+
+---
+
+## 🎓 Real-World Example: Full Setup
+
+Here's how to set up GitHub + NotebookLM + Brave Search for both Claude Desktop and Claude Code:
+
+### Step 1: Set Environment Variables
+```bash
+# Add to ~/.zshrc or ~/.bashrc
+export GITHUB_TOKEN="ghp_your_token_here"
+export BRAVE_API_KEY="BSA_your_key_here"
+```
+
+### Step 2: Create Source File
+```bash
+mkdir ~/mcp-config
+cat > ~/mcp-config/servers.json << 'EOF'
+{
+  "github": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"}
+  },
+  "notebooklm": {
+    "command": "npx",
+    "args": ["-y", "notebooklm-mcp@latest"]
+  },
+  "brave-search": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+    "env": {"BRAVE_API_KEY": "${BRAVE_API_KEY}"}
+  }
+}
+EOF
+```
+
+### Step 3: Install to Claude Desktop
+```bash
+# macOS
+jq '{mcpServers: .}' ~/mcp-config/servers.json > \
+  "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# Restart Claude Desktop
+```
+
+### Step 4: Install to Claude Code
+```bash
+# Install each server
+claude mcp add-json github "$(jq -c '.github' ~/mcp-config/servers.json)" --scope user
+claude mcp add-json notebooklm "$(jq -c '.notebooklm' ~/mcp-config/servers.json)" --scope user
+claude mcp add-json brave-search "$(jq -c '.["brave-search"]' ~/mcp-config/servers.json)" --scope user
+
+# Verify
+claude mcp list
+```
+
+### Step 5: Create Update Scripts
+```bash
+cat > ~/mcp-config/update.sh << 'SCRIPT'
+#!/bin/bash
+SOURCE="$HOME/mcp-config/servers.json"
+
+echo "📦 Updating MCP servers from $SOURCE"
+
+# Update Desktop
+jq '{mcpServers: .}' "$SOURCE" > \
+  "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+echo "✅ Claude Desktop updated"
+
+# Update Code
+for server in $(jq -r 'keys[]' "$SOURCE"); do
+    config=$(jq -c ".\"$server\"" "$SOURCE")
+    claude mcp remove "$server" 2>/dev/null || true
+    claude mcp add-json "$server" "$config" --scope user
+    echo "✅ $server updated in Claude Code"
+done
+
+echo "🎉 All done! Restart Claude Desktop to apply changes"
+SCRIPT
+
+chmod +x ~/mcp-config/update.sh
+```
+
+Now you can update all MCP servers by editing `~/mcp-config/servers.json` and running:
+```bash
+~/mcp-config/update.sh
+```
+
+---
+
+## 🚨 Common Pitfalls
+
+### ❌ Don't: Use symlinks
+```bash
+# This WON'T work - different file formats
+ln -s ~/.claude.json "~/Library/Application Support/Claude/claude_desktop_config.json"
+```
+
+### ❌ Don't: Hardcode credentials
+```json
+{
+  "env": {
+    "API_KEY": "sk-1234567890abcdef"  // ❌ Never commit this!
+  }
+}
+```
+
+### ❌ Don't: Forget scope in Claude Code
+```bash
+claude mcp add github  # ❌ Which scope? Unclear!
+claude mcp add github --scope user  # ✅ Clear intent
+```
+
+### ✅ Do: Version control your configs (without secrets)
+```bash
+git add ~/mcp-config/servers.json
+git add ~/mcp-config/*.sh
+git commit -m "Add MCP server definitions"
+```
+
+---
+
+## 🔍 Verification
+
+### Check Claude Desktop
+```bash
+# macOS
+cat "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+
+# Look for MCP indicator in bottom-right of Claude Desktop
+```
+
+### Check Claude Code
+```bash
+claude mcp list
+
+# Expected output:
+# MCP Servers:
+#   github (user) - connected
+#   notebooklm (user) - connected
+#   brave-search (user) - connected
+```
+
+---
+
+## 📚 Advanced Topics
+
+### Enterprise MCP Management
+
+Organizations can use `managed-mcp.json` for centralized control with allowlists/denylists
+
+**managed-mcp.json** (IT controlled):
+```json
+{
+  "mcpServers": {
+    "approved-github": {
+      "command": "npx",
+      "args": ["-y", "@company/approved-github-mcp"]
+    }
+  }
+}
+```
+
+**allowlist.json**:
+```json
+{
+  "allowedServers": [
+    "approved-github",
+    "company-internal-tools"
+  ]
+}
+```
+
+### Dynamic MCP Loading
+
+```bash
+# Load different MCPs based on context
+if [ "$PROJECT_TYPE" = "web" ]; then
+    claude mcp add brave-search --scope project
+elif [ "$PROJECT_TYPE" = "data" ]; then
+    claude mcp add postgres --scope project
+fi
+```
+
+---
+
+## 🎯 Decision Tree: Which Strategy?
+
+```
+Are you working alone?
+├─ Yes → Direct edit ~/.claude.json + claude_desktop_config.json
+└─ No → Are you on a team?
+    ├─ Yes → .mcp.json per project + shared env vars
+    └─ No → Multiple machines?
+        ├─ Yes → Single source + update scripts
+        └─ No → Direct CLI installation
+```
+
+---
+
+## 📖 References
+
+- Scott Spence - Configuring MCP Tools in Claude Code
+- Claude Code Docs - Connect to MCP Tools
+- MCP Official Docs - Connect to Local Servers
+
+---
+
+**Last Updated:** December 2024  
+**Claude Code Version:** Research Preview  
+**Claude Desktop Version:** Latest
