@@ -13,11 +13,12 @@ Both integrations use the **NotebookLM MCP Server** (`notebooklm-mcp`) which han
 
 ```
 notebooklm-claude-integration/
+├── .claude-plugin/                  # Marketplace manifest (repo root)
+│   └── marketplace.json             # Points to plugins in this repo
 ├── plugins/                         # Claude Code Plugin
 │   └── notebooklm/
 │       ├── .claude-plugin/
-│       │   ├── plugin.json          # Plugin manifest
-│       │   └── marketplace.json     # Marketplace manifest
+│       │   └── plugin.json          # Plugin manifest
 │       ├── commands/
 │       │   └── nlm.md               # /nlm command (ask, add, list, select, auth)
 │       ├── agents/
@@ -100,7 +101,7 @@ Use this method if you want to install the plugin directly without cloning the r
 
 ```bash
 # 1. Add the marketplace from GitHub
-claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 
 # 2. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -122,7 +123,7 @@ git clone https://github.com/ray-manaloto/notebooklm-claude-integration.git
 cd notebooklm-claude-integration
 
 # 2. Add the marketplace from local path
-claude plugin marketplace add ./plugins/notebooklm
+claude plugin marketplace add .
 
 # 3. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -227,7 +228,7 @@ claude plugin list
 # Should show: notebooklm with your chosen scope
 
 # 3. If marketplace is missing, re-add it:
-claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 
 # 4. If plugin is missing, re-install it:
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -278,7 +279,7 @@ claude
 
 | Issue | Solution |
 |-------|----------|
-| Wrong marketplace path | Use `./plugins/notebooklm` (includes .claude-plugin folder) |
+| Wrong marketplace path | Use `.` from repo root (marketplace.json is at `.claude-plugin/marketplace.json`) |
 | Plugin not found during install | Ensure marketplace is added first with `marketplace add` |
 | Scope confusion | Use `--scope project` for most cases |
 | Old plugin version | Remove and re-add marketplace to update |

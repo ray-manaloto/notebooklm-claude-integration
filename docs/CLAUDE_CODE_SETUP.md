@@ -26,7 +26,7 @@ This is the easiest way to install - no need to clone the repository:
 
 ```bash
 # 1. Add the marketplace from GitHub
-claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 
 # 2. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -45,7 +45,7 @@ git clone https://github.com/ray-manaloto/notebooklm-claude-integration.git
 cd notebooklm-claude-integration
 
 # 2. Add the marketplace from local path
-claude plugin marketplace add ./plugins/notebooklm
+claude plugin marketplace add .
 
 # 3. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "notebooklm-plugin",
   "owner": {
     "name": "Ray Manaloto",
@@ -12,7 +13,7 @@
   "plugins": [
     {
       "name": "notebooklm",
-      "source": "./",
+      "source": "./plugins/notebooklm",
       "description": "Query Google NotebookLM notebooks for source-grounded, citation-backed answers. Includes /nlm command with subcommands (ask, add, list, select, auth), proactive research agent, and comprehensive MCP tools reference.",
       "version": "1.0.0",
       "author": {
@@ -31,15 +32,6 @@
         "google",
         "citations",
         "mcp"
-      ],
-      "commands": [
-        "./commands/nlm.md"
-      ],
-      "agents": [
-        "./agents/research-agent.md"
-      ],
-      "skills": [
-        "./skills/notebooklm-patterns"
       ]
     }
   ]

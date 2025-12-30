@@ -47,7 +47,7 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
 claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
 
 # 2. Add the plugin marketplace from GitHub
-claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 
 # 3. Install the plugin (project scope)
 claude plugin install notebooklm@notebooklm-plugin --scope project
@@ -64,7 +64,7 @@ claude plugin list              # Should show: notebooklm
 
 **For local development** (if you cloned this repo):
 ```bash
-claude plugin marketplace add ./plugins/notebooklm
+claude plugin marketplace add .
 ```
 
 ### For Claude Desktop (MCP)

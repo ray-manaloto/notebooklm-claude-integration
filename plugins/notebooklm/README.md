@@ -20,7 +20,7 @@ This plugin integrates NotebookLM with Claude Code, enabling you to:
 claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
 
 # 2. Add the marketplace from GitHub
-claude plugin marketplace add ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 
 # 3. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
