@@ -1,7 +1,7 @@
 ---
 name: nlm
 description: Query NotebookLM notebooks for source-grounded answers
-argument-hint: "<ask|add|list|select|auth> [arguments]"
+argument-hint: "<ask|ask-all|add|list|select|auth> [arguments]"
 allowed-tools:
   - mcp__notebooklm__ask_question
   - mcp__notebooklm__add_notebook
@@ -23,6 +23,7 @@ Query your Google NotebookLM notebooks for source-grounded, citation-backed answ
 | Subcommand | Usage | Description |
 |------------|-------|-------------|
 | `ask` | `/nlm ask <question>` | Ask a question to the active notebook |
+| `ask-all` | `/nlm ask-all <question>` | Ask all notebooks in parallel, compare answers |
 | `add` | `/nlm add <url>` | Add a notebook to your library |
 | `list` | `/nlm list` | List all notebooks in library |
 | `select` | `/nlm select <name or id>` | Set active notebook |
@@ -59,6 +60,98 @@ When user runs `/nlm ask <question>`:
 ```
 /nlm ask How do I implement OAuth in FastAPI?
 ```
+
+### `ask-all` - Ask All Notebooks (Parallel)
+
+When user runs `/nlm ask-all <question>`:
+
+This command queries **all notebooks in your library simultaneously** using parallel subagents, then aggregates the responses with clear notebook identification.
+
+**Execution Steps:**
+
+1. Check if authenticated using `get_health`
+2. If not authenticated, prompt user to run `/nlm auth setup`
+3. Use `list_notebooks` to get all notebooks in library
+4. If no notebooks, prompt user to add one with `/nlm add <url>`
+5. If only one notebook, suggest using `/nlm ask` instead for efficiency
+6. **For each notebook, spawn a parallel subagent** using the Task tool:
+   - Each subagent should:
+     a. Select its assigned notebook using `select_notebook`
+     b. Ask the question using `ask_question`
+     c. Return the response with notebook name/ID
+7. Wait for all subagents to complete
+8. Aggregate and display responses in a comparative format:
+
+```markdown
+## Answers from All Notebooks
+
+### 📚 [Notebook 1 Name]
+> **Topics:** [topics]
+
+[Answer text from this notebook]
+
+**Sources:** [Citation 1], [Citation 2]
+
+---
+
+### 📚 [Notebook 2 Name]
+> **Topics:** [topics]
+
+[Answer text from this notebook]
+
+**Sources:** [Citation 1], [Citation 2]
+
+---
+
+### 📚 [Notebook 3 Name]
+> **Topics:** [topics]
+
+[Answer text from this notebook]
+
+**Sources:** [Citation 1], [Citation 2]
+
+---
+
+## Summary
+
+| Notebook | Key Points | Relevance |
+|----------|------------|-----------|
+| [Name 1] | [Brief summary] | High/Medium/Low |
+| [Name 2] | [Brief summary] | High/Medium/Low |
+| [Name 3] | [Brief summary] | High/Medium/Low |
+
+**Most Relevant Source:** [Notebook name] - [Reason]
+```
+
+**Subagent Prompt Template:**
+
+For each notebook, use the Task tool with this prompt:
+```
+Query the notebook "[notebook_name]" (ID: [notebook_id]) with this question: "[user_question]"
+
+Steps:
+1. Use select_notebook to select notebook ID "[notebook_id]"
+2. Use ask_question with the question
+3. Return the full response including any citations
+
+Format your response as:
+NOTEBOOK: [notebook_name]
+TOPICS: [notebook_topics]
+ANSWER: [the answer]
+SOURCES: [citations if any]
+```
+
+**Example:**
+```
+/nlm ask-all What are the best practices for error handling?
+```
+
+**Notes:**
+- Queries run in parallel for speed
+- Each notebook is queried independently
+- Results are aggregated with clear source attribution
+- A summary table helps compare answers across sources
+- Rate limits apply (50 queries/day free tier counts each notebook query separately)
 
 ### `add` - Add Notebook
 
