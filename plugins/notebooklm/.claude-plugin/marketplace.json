@@ -6,14 +6,14 @@
     "url": "https://github.com/ray-manaloto"
   },
   "metadata": {
-    "description": "NotebookLM integration for Claude Code - query notebooks for source-grounded answers",
+    "description": "NotebookLM integration for Claude Code - query notebooks for source-grounded, citation-backed answers from Gemini AI. Includes 1 command, 1 research agent, 1 skill, and 9 MCP tools.",
     "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "notebooklm",
       "source": "./",
-      "description": "Query Google NotebookLM notebooks for source-grounded, citation-backed answers. Manage notebook library and conduct research directly from Claude Code.",
+      "description": "Query Google NotebookLM notebooks for source-grounded, citation-backed answers. Includes /nlm command with subcommands (ask, add, list, select, auth), proactive research agent, and comprehensive MCP tools reference.",
       "version": "1.0.0",
       "author": {
         "name": "Ray Manaloto",
@@ -28,9 +28,10 @@
         "documentation",
         "knowledge-base",
         "gemini",
-        "google"
+        "google",
+        "citations",
+        "mcp"
       ],
-      "category": "research",
       "commands": [
         "./commands/nlm.md"
       ],

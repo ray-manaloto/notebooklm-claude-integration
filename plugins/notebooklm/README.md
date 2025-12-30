@@ -1,160 +1,221 @@
 # NotebookLM Plugin for Claude Code
 
-Query your Google NotebookLM notebooks directly from Claude Code for source-grounded, citation-backed answers from Gemini.
+> Query Google NotebookLM notebooks for source-grounded, citation-backed answers powered by Gemini AI.
 
-## Features
+**1 command** | **1 agent** | **1 skill** | **9 MCP tools**
 
-- **`/nlm` Command**: Single command with subcommands for all operations
-- **Research Agent**: Proactive deep research with automatic follow-ups
-- **Library Management**: Organize and search your notebook collection
-- **Zero Hallucinations**: Answers sourced exclusively from your documents
+## Overview
 
-## Prerequisites
+This plugin integrates NotebookLM with Claude Code, enabling you to:
 
-1. **NotebookLM MCP Server** must be configured:
-   ```bash
-   claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
-   ```
-
-2. **Google Account** with NotebookLM access
-
-## Installation
-
-### From Local Path
-```bash
-claude plugin add /path/to/notebooklm-claude-integration/plugins/notebooklm
-```
-
-### From Marketplace (if published)
-```bash
-claude plugin install notebooklm@your-marketplace
-```
-
-### Installation Scopes
-```bash
-# User scope (default) - available in all projects
-claude plugin add ./plugins/notebooklm
-
-# Project scope - shared with team via version control
-claude plugin add ./plugins/notebooklm --scope project
-
-# Local scope - project-specific, gitignored
-claude plugin add ./plugins/notebooklm --scope local
-```
+- **Query notebooks** for hallucination-free answers with citations
+- **Manage a library** of multiple notebooks by topic
+- **Research deeply** with automatic follow-up questions
+- **Switch contexts** seamlessly between documentation sources
 
 ## Quick Start
 
 ```bash
-# 1. Authenticate (first time only)
+# 1. Install the MCP server (prerequisite)
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+
+# 2. Add the marketplace
+claude plugin marketplace add https://github.com/ray-manaloto/notebooklm-claude-integration/plugins/notebooklm
+
+# 3. Install the plugin
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# 4. Restart Claude Code and authenticate
 /nlm auth setup
 
-# 2. Add a notebook
+# 5. Add your first notebook
 /nlm add https://notebooklm.google.com/notebook/YOUR_ID
 
-# 3. Ask questions
-/nlm ask "How do I implement OAuth?"
+# 6. Start querying
+/nlm ask "How do I implement authentication?"
 ```
 
-## Commands
+## Components
 
-### `/nlm ask <question>`
-Ask a question to the active notebook.
+### Commands (1)
 
+| Command | Description |
+|---------|-------------|
+| `/nlm` | Unified command for querying notebooks, managing library, and authentication |
+
+**Subcommands:**
+
+| Subcommand | Usage | Description |
+|------------|-------|-------------|
+| `ask` | `/nlm ask "question"` | Query the active notebook |
+| `add` | `/nlm add <url>` | Add notebook to library (auto-selects as active) |
+| `list` | `/nlm list` | List all notebooks in library |
+| `select` | `/nlm select <name>` | Set active notebook for queries |
+| `auth` | `/nlm auth [setup\|reset]` | Manage Google authentication |
+
+### Agents (1)
+
+| Agent | Model | Trigger | Description |
+|-------|-------|---------|-------------|
+| `research-agent` | sonnet | PROACTIVE | Deep research with automatic follow-up questions. Triggers on "research", "investigate", "explore", "deep dive" |
+
+### Skills (1)
+
+| Skill | Description |
+|-------|-------------|
+| `notebooklm-patterns` | MCP tools reference, troubleshooting guide, and usage patterns |
+
+## MCP Tools Reference
+
+The plugin uses these NotebookLM MCP server tools:
+
+| Tool | Purpose |
+|------|---------|
+| `mcp__notebooklm__ask_question` | Query a notebook |
+| `mcp__notebooklm__add_notebook` | Add notebook to library |
+| `mcp__notebooklm__list_notebooks` | List all notebooks |
+| `mcp__notebooklm__select_notebook` | Set active notebook |
+| `mcp__notebooklm__get_notebook` | Get notebook details |
+| `mcp__notebooklm__search_notebooks` | Search by query |
+| `mcp__notebooklm__get_health` | Check auth status |
+| `mcp__notebooklm__setup_auth` | Initial authentication |
+| `mcp__notebooklm__re_auth` | Reset authentication |
+
+## Installation Options
+
+```bash
+# Project scope (recommended) - available in current project
+claude plugin install notebooklm@notebooklm-plugin --scope project
+
+# User scope - available in all projects
+claude plugin install notebooklm@notebooklm-plugin --scope user
+
+# Local scope - project-specific, gitignored
+claude plugin install notebooklm@notebooklm-plugin --scope local
 ```
-/nlm ask "What are the best practices for error handling?"
+
+## Usage Examples
+
+### Basic Workflow
+
+```bash
+# Check authentication
+/nlm auth
+
+# Add a documentation notebook
+/nlm add https://notebooklm.google.com/notebook/abc123
+
+# Ask questions
+/nlm ask "How do I implement OAuth2?"
+/nlm ask "What are the rate limiting strategies?"
 ```
 
-### `/nlm add <url>`
-Add a NotebookLM notebook to your library. Automatically discovers content and sets as active.
+### Multiple Notebooks
 
-```
-/nlm add https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069
-```
+```bash
+# Add multiple notebooks
+/nlm add https://notebooklm.google.com/notebook/docs1
+/nlm add https://notebooklm.google.com/notebook/docs2
 
-### `/nlm list`
-List all notebooks in your library.
-
-```
+# List and switch
 /nlm list
+/nlm select "API Documentation"
 ```
 
-### `/nlm select <name or id>`
-Set a notebook as active for queries.
+### Research Agent (Proactive)
+
+The research agent activates automatically:
 
 ```
-/nlm select "FastAPI Documentation"
-/nlm select fastapi
-```
-
-### `/nlm auth [setup|status|reset]`
-Manage authentication.
-
-```
-/nlm auth          # Check status
-/nlm auth setup    # Initial setup (opens browser)
-/nlm auth reset    # Clear and re-authenticate
-```
-
-## Research Agent
-
-The research agent triggers proactively when you ask to research, investigate, or explore a topic:
-
-```
-"Research how to implement authentication in my docs"
-"Investigate the error handling patterns"
-"Deep dive into the API structure"
+"Research authentication patterns from my documentation"
+"Investigate the error handling approaches"
+"Deep dive into the caching strategies"
 ```
 
 The agent will:
-1. Query your active notebook
-2. Generate follow-up questions
-3. Synthesize comprehensive findings
+1. Query the active notebook with your question
+2. Generate follow-up questions based on initial findings
+3. Synthesize comprehensive research results with citations
+
+## Rate Limits
+
+| Resource | Free Tier | Pro/Ultra |
+|----------|-----------|-----------|
+| Daily Queries | 50 | 250 |
+| Notebooks | 100 | 500 |
+| Sources per Notebook | 50 | 100 |
+
+## Troubleshooting
+
+### Authentication Issues
+
+```bash
+# Check status
+/nlm auth
+
+# Setup (opens browser)
+/nlm auth setup
+
+# Reset and re-authenticate
+/nlm auth reset
+```
+
+### Rate Limit Exceeded
+
+- Wait for daily reset (midnight UTC), or
+- Use `/nlm auth reset` to switch Google accounts
+
+### Wrong Notebook
+
+```bash
+/nlm list           # See all notebooks with [ACTIVE] marker
+/nlm select <name>  # Switch to correct one
+```
+
+### MCP Server Not Found
+
+```bash
+claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+# Restart Claude Code
+```
 
 ## Plugin Structure
 
 ```
 plugins/notebooklm/
 ├── .claude-plugin/
-│   └── plugin.json
+│   ├── plugin.json          # Plugin manifest
+│   └── marketplace.json     # Marketplace manifest
 ├── agents/
-│   └── research-agent.md
+│   └── research-agent.md    # Proactive research agent
 ├── commands/
-│   └── nlm.md
+│   └── nlm.md               # /nlm command with subcommands
 ├── skills/
 │   └── notebooklm-patterns/
-│       └── SKILL.md
+│       └── SKILL.md         # MCP tools & troubleshooting
 └── README.md
-```
-
-## Troubleshooting
-
-### Not Authenticated
-```bash
-/nlm auth setup
-```
-
-### Rate Limited (50 queries/day)
-- Wait for daily reset, or
-- Use `/nlm auth reset` to switch accounts
-
-### Wrong Notebook
-```bash
-/nlm list           # See all notebooks
-/nlm select <name>  # Switch to correct one
-```
-
-### Browser Issues
-Close all Chrome instances and re-authenticate:
-```bash
-/nlm auth reset
 ```
 
 ## Requirements
 
-- Claude Code CLI
-- NotebookLM MCP server (`notebooklm-mcp`)
-- Google Chrome browser
-- Google account with NotebookLM access
+- **Claude Code CLI** - v1.0+
+- **NotebookLM MCP Server** - `npx -y notebooklm-mcp@latest`
+- **Google Chrome** - For browser automation
+- **Google Account** - With NotebookLM access
+
+## Security
+
+- All credentials stored locally by MCP server
+- Browser session managed by Playwright
+- No data sent to third parties
+- Consider using a dedicated Google account
+
+## Related Documentation
+
+- [Claude Code Setup Guide](../../docs/CLAUDE_CODE_SETUP.md)
+- [API Reference](../../docs/API_REFERENCE.md)
+- [Troubleshooting Guide](../../docs/TROUBLESHOOTING.md)
+- [NotebookLM MCP Server](https://github.com/PleasePrompto/notebooklm-mcp)
 
 ## License
 
