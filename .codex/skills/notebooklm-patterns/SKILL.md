@@ -49,6 +49,16 @@ Use this sequence to automate connecting and querying:
    - `mcp__notebooklm__ask_question` with `question`.
 4. For follow-ups, pass `session_id` from the prior response.
 
+## Research-First Behavior
+
+For changes that impact code or decisions, always query NotebookLM first and cite sources in the response. Avoid “best guesses” when the notebook can answer directly.
+
+## Reliability Tips
+
+- If `ask_question` times out, retry once with `browser_options.timeout_ms=60000`.
+- If a query repeatedly fails, re-auth with `mcp__notebooklm__re_auth`.
+- If supported by the server, enable browser visibility to debug (e.g., `show_browser: true` in auth flows).
+
 ## Multi-Notebook Query (Codex)
 
 When you need the same question answered across all notebooks, prefer `ask_question` with `notebook_id` to avoid race conditions from global `select_notebook` state.

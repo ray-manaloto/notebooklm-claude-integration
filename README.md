@@ -160,6 +160,25 @@ NOTEBOOK_ID="my-test-notebook" \
 scripts/codex-skill-e2e.sh
 ```
 
+### Codex Improvement Notes
+
+- Prefer smaller MCP tool profiles when available to reduce context load (see notebooklm-mcp docs).
+- Use `notebook_id` for multi-notebook queries to avoid shared active state.
+- Retry `ask_question` once with `browser_options.timeout_ms=60000` if it times out.
+
+### Codex Multi-Notebook Query
+
+Run a single question across all notebooks and aggregate results (uses notebook_id to avoid shared state conflicts):
+
+```bash
+make codex-ask-all
+```
+
+Optional override:
+```bash
+QUESTION="What are the key risks in this architecture?" make codex-ask-all
+```
+
 ## Plugin Commands
 
 | Command | Description |
