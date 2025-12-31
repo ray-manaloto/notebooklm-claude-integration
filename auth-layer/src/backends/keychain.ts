@@ -120,6 +120,8 @@ export class KeychainAuthBackend implements AuthBackend {
   private async saveToKeychain(key: string, value: string): Promise<void> {
     const service = this.config.keychainService;
     const account = `${process.env.USER || 'user'}-${key}`;
+    const trustedApps = this.getTrustedApps();
+    const trustedArgs = trustedApps.flatMap(app => ['-T', app]);
 
     // Delete existing entry first (ignore errors)
     try {
@@ -137,7 +139,8 @@ export class KeychainAuthBackend implements AuthBackend {
       'add-generic-password',
       '-s', service,
       '-a', account,
-      '-w', value
+      '-w', value,
+      ...trustedArgs
     ]);
   }
 
@@ -156,7 +159,15 @@ export class KeychainAuthBackend implements AuthBackend {
         '-w'
       ]);
       return stdout.trim();
-    } catch {
+    } catch (error) {
+      const stderr = (error as { stderr?: string }).stderr ?? '';
+      const stderrText = String(stderr);
+      if (stderrText.includes('User interaction is not allowed') || stderrText.includes('interaction not allowed')) {
+        if (this.config.verbose) {
+          console.warn('Keychain access requires user interaction; skipping keychain backend.');
+        }
+        return null;
+      }
       return null;
     }
   }
@@ -177,6 +188,18 @@ export class KeychainAuthBackend implements AuthBackend {
     } catch {
       // Ignore - entry may not exist
     }
+  }
+
+  /**
+   * Allowlist apps that can read the keychain item without UI prompts.
+   */
+  private getTrustedApps(): string[] {
+    const trusted = new Set<string>();
+    if (process.execPath) {
+      trusted.add(process.execPath);
+    }
+    trusted.add('/usr/bin/security');
+    return Array.from(trusted);
   }
 }
 

@@ -22,6 +22,14 @@ Use these tools when available:
 
 If the tools are missing or error with “tool not found,” ask the user to configure the MCP server using `mcp-config/README.md` and retry.
 
+## Tool Profiles (Minimal/Standard)
+
+When supported, use smaller profiles to reduce context load:
+- **Minimal**: query-only flows (list/select/ask).
+- **Standard**: library management (add/search/update) plus query tools.
+
+You can set `NOTEBOOKLM_PROFILE=minimal` or `NOTEBOOKLM_PROFILE=standard` in the environment before starting Codex.
+
 ## Authentication Workflow (Browser-Based)
 
 NotebookLM has no API/SDK. You must authenticate through a browser session:
@@ -53,11 +61,31 @@ Use this sequence to automate connecting and querying:
 
 For changes that impact code or decisions, always query NotebookLM first and cite sources in the response. Avoid “best guesses” when the notebook can answer directly.
 
+### Research-First Prompt Templates
+
+- **Research → Synthesize → Code**: “Research this in NotebookLM first, summarize with citations, then propose changes.”
+- **Plan & Verify**: “Explain the implementation based on sources before writing code.”
+- **Explain-back**: “Explain the concept in your own words to confirm understanding before edits.”
+
+## Data Quality & Triangulation
+
+To reduce hallucinations, curate sources per notebook with a triangulated set:
+- **Theory**: official docs or PDFs.
+- **Practice**: video tutorials (YouTube URLs).
+- **Context**: articles/notes about pitfalls and real-world use.
+
+Keep notebooks domain-specific and tag them consistently so Codex can “smart select” the right notebook.
+
 ## Reliability Tips
 
 - If `ask_question` times out, retry once with `browser_options.timeout_ms=60000`.
 - If a query repeatedly fails, re-auth with `mcp__notebooklm__re_auth`.
 - If supported by the server, enable browser visibility to debug (e.g., `show_browser: true` in auth flows).
+- If the answer is off-topic, reset or abandon the session and re-ask with a narrower prompt that names the exact subject, required outputs, and “do not answer about unrelated topics.”
+
+## Tool Access Guardrails
+
+When possible, scope tool access to the minimum needed for the task. If your Codex setup supports tool allowlists, prefer them for NotebookLM skills to reduce blast radius. Keep destructive tools (write/delete) out of research-only flows.
 
 ## Multi-Notebook Query (Codex)
 
@@ -70,6 +98,15 @@ When you need the same question answered across all notebooks, prefer `ask_quest
 Notes:
 - Parallel calls are fine, but keep within rate limits (each notebook query counts).
 - Avoid `select_notebook` inside parallel workers since it mutates shared active state.
+
+## Multi-Agent Usage (Best Practice)
+
+For complex tasks, split responsibilities:
+- **Research agent**: gather NotebookLM answers (single or multi-notebook).
+- **Builder agent**: implement changes based on cited sources.
+- **Reviewer agent**: check for gaps, missing citations, and regressions.
+
+If the runtime supports subagents or task parallelism, prefer spawning subagents for multi-notebook queries and aggregating results in the main agent.
 
 ### Example: Add and Query
 
@@ -84,7 +121,12 @@ If a notebook is not yet in the library:
 - Include citations returned by NotebookLM.
 - Keep answers concise; offer to drill down with follow-up questions.
 - If a notebook lacks relevant sources, suggest adding or switching notebooks.
+- If a response drifts off-topic after a retry, report a likely notebook-content mismatch rather than guessing.
 
+## References
+
+For deeper workflows and orchestration patterns, see:
+- `references/agent-gating-checklist.md` for multi-agent handoff checks.
 ## Troubleshooting Quick Hits
 
 - **Not authenticated:** run `mcp__notebooklm__setup_auth`.

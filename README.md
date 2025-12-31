@@ -15,6 +15,16 @@ Both allow you to query your NotebookLM notebooks directly from Claude, getting 
 
 ## Quick Start
 
+Project plan lives at `docs/PROJECT_PLAN.md` with topic-specific items under `docs/plans/`.
+CI details live at `docs/CI.md`.
+
+NotebookLM end-to-end integration (uses your local Chrome auth):
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Summarize the key sources in this notebook." \
+tests/notebooklm-integration.sh
+```
+
 ### AI Agent Step-by-Step (Codex CLI)
 
 Use this sequence when an agent needs to verify the NotebookLM integration end-to-end.
@@ -215,14 +225,27 @@ NOTEBOOK_ID="my-test-notebook" \
 scripts/codex-skill-e2e.sh
 ```
 
+Optional profile override:
+```bash
+NOTEBOOKLM_PROFILE=standard scripts/codex-skill-e2e.sh
+```
+
 Validation checklist (expected results):
 - `get_health` reports `authenticated: true`
 - The target notebook exists or is added successfully
 - A response is returned with citations
 
+See `docs/CODEX_PLAYBOOK.md` for a full Codex CLI/SDK validation runbook.
+
+Recommended validation run:
+```bash
+make codex-validate
+```
+
 ### Codex Improvement Notes
 
 - Prefer smaller MCP tool profiles when available to reduce context load (see notebooklm-mcp docs).
+- Use `NOTEBOOKLM_PROFILE=minimal` for query-only flows and `NOTEBOOKLM_PROFILE=standard` when you need library management.
 - Use `notebook_id` for multi-notebook queries to avoid shared active state.
 - Retry `ask_question` once with `browser_options.timeout_ms=60000` if it times out.
 
@@ -239,10 +262,69 @@ Optional override:
 QUESTION="What are the key risks in this architecture?" make codex-ask-all
 ```
 
+With a profile override:
+```bash
+NOTEBOOKLM_PROFILE=minimal QUESTION="What are the key risks in this architecture?" make codex-ask-all
+```
+
+Filter by notebook IDs (comma-separated):
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Provide modern best practices for integration tests without mocks." \
+make codex-ask-all
+```
+
 Validation checklist (expected results):
 - Each notebook returns a labeled section
 - Citations are included when NotebookLM provides them
 - Timeouts are retried once and reported
+
+### Codex Multi-Notebook Query (Subagent-aware)
+
+If Codex supports subagents or task parallelism, this script asks a subagent per notebook; otherwise it falls back to sequential queries:
+
+```bash
+scripts/codex-ask-all-subagents.sh
+```
+
+Optional overrides:
+```bash
+NOTEBOOKLM_PROFILE=standard \
+QUESTION="Summarize authentication flow changes." \
+scripts/codex-ask-all-subagents.sh
+```
+
+Make target:
+```bash
+make codex-ask-all-subagents
+```
+
+SDK example:
+```bash
+cd codex-sdk-test
+QUESTION="Summarize auth flow changes." npm run test:notebooklm-ask-all
+```
+
+### Parallel Auth Bootstrap (Recommended for Multi-Process)
+
+Bootstrap a single login, then fan out parallel workers that reuse the profile:
+
+```bash
+make codex-bootstrap-parallel
+```
+
+Optional overrides:
+```bash
+NOTEBOOK_PROFILE_STRATEGY=auto \
+NOTEBOOK_CLONE_PROFILE=true \
+QUESTION="Summarize improvements for the Codex integration." \
+make codex-bootstrap-parallel
+```
+
+Bootstrap only (no query):
+```bash
+make codex-bootstrap-auth
+```
 
 ## Plugin Commands
 

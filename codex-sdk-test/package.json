@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test:notebooklm": "node run-notebooklm-test.mjs",
-    "test:notebooklm-cleanup": "node run-notebooklm-cleanup-query.mjs"
+    "test:notebooklm-cleanup": "node run-notebooklm-cleanup-query.mjs",
+    "test:notebooklm-ask-all": "node run-notebooklm-ask-all.mjs"
   },
   "dependencies": {
     "@openai/codex-sdk": "^0.77.0"

@@ -9,6 +9,10 @@ NOTEBOOK_NAME=${NOTEBOOK_NAME:-"NotebookLM Secondary Test"}
 NOTEBOOK_DESC=${NOTEBOOK_DESC:-"Second test notebook for Codex + NotebookLM integration."}
 NOTEBOOK_ID=${NOTEBOOK_ID:-"notebooklm-secondary-test"}
 
+if [[ -n "${NOTEBOOKLM_PROFILE:-}" ]]; then
+  export NOTEBOOKLM_PROFILE
+fi
+
 TEST_ROOT=${TEST_ROOT:-"/tmp/codex-skill-e2e"}
 SKILL_TMP=${SKILL_TMP:-"/tmp/skill-download-e2e"}
 

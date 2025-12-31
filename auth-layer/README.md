@@ -157,6 +157,15 @@ security find-generic-password -s "notebooklm-claude-auth"
 # If prompted, allow access in the Keychain Access app
 ```
 
+If you see “User interaction is not allowed” in headless runs, clear the existing
+keychain entry and re-login so the tool can re-save cookies with a trusted-app
+allowlist:
+
+```bash
+nlm-auth logout
+nlm-auth login
+```
+
 ### Session expired
 
 ```bash

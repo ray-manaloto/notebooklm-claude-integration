@@ -327,6 +327,21 @@ claude
 
 ---
 
+## Session Cap Reached
+
+**Symptoms:**
+- `ask_question` requests time out unexpectedly
+- `get_health` shows `active_sessions` equal to `max_sessions` (default 10)
+
+**Fix:**
+- Close old sessions via MCP tools (`list_sessions` → `close_session`) or
+- Restart the NotebookLM MCP server to clear inactive sessions
+
+If you’re using Codex/Claude tools, ask the agent to run:
+`mcp__notebooklm__list_sessions` and close inactive session IDs.
+
+---
+
 ## Getting Help
 
 ### Collect Debug Info
@@ -381,6 +396,14 @@ alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
 
 Cookies are automatically saved to macOS Keychain after successful login.
 
+If headless runs show a “User interaction is not allowed” popup, clear the
+keychain entry and re-login so cookies are saved with trusted-app access:
+
+```bash
+nlm-auth logout
+nlm-auth login
+```
+
 ```bash
 # Check if cookies are stored
 security find-generic-password -s "notebooklm-claude-auth" -a "$USER-cookies"
@@ -410,6 +433,7 @@ rm -rf ~/.notebooklm-auth/chrome-profile
 | Rate limits | 50 queries/day (free), 250 (Pro/Ultra) |
 | One notebook at a time | Must select active notebook |
 | CDP single instance | Only one Chrome can use debugging port |
+| Session cap | Max 10 active sessions; close or restart to clear |
 
 ---
 

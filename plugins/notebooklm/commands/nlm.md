@@ -304,6 +304,13 @@ Show macOS Keychain status:
 ## Keychain Authentication
 
 Cookies are securely stored in macOS Keychain.
+If headless runs show “User interaction is not allowed,” clear the keychain
+entry and re-login so cookies are saved with trusted-app access:
+
+```bash
+nlm-auth logout
+nlm-auth login
+```
 
 **Status:** Stored/Not Stored
 **Saved At:** [timestamp]
