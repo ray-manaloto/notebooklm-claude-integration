@@ -40,6 +40,61 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
    make codex-skill-e2e
    ```
 
+### AI Agent Step-by-Step (Codex SDK)
+
+Use this sequence when a Codex SDK agent must validate the setup and produce a confirmed response.
+
+1. Ensure Codex CLI + MCP are set up (same as CLI steps above).
+2. Run the SDK verification (temp workspace, streaming output):
+   ```bash
+   SDK_ROOT=/tmp/codex-sdk-verify
+   rm -rf "$SDK_ROOT" && mkdir -p "$SDK_ROOT"
+   cd "$SDK_ROOT"
+
+   cat <<'EOF' > package.json
+   {
+     "name": "codex-sdk-verify",
+     "version": "0.1.0",
+     "private": true,
+     "type": "module",
+     "scripts": { "run": "node run.mjs" },
+     "dependencies": { "@openai/codex-sdk": "^0.77.0" }
+   }
+   EOF
+
+   cat <<'EOF' > run.mjs
+   import { Codex } from "@openai/codex-sdk";
+
+   const prompt = [
+     "Use the notebooklm-patterns skill.",
+     "List all notebooks, then ask each notebook (via notebook_id) this question:",
+     "'How can we improve the Codex implementation in this repo?'.",
+     "Aggregate responses labeled by notebook name and include citations.",
+     "If any ask_question times out, retry once with browser_options timeout_ms=60000.",
+   ].join(" ");
+
+   const codex = new Codex();
+   const thread = codex.startThread({
+     workingDirectory: "/tmp/codex-skill-verify",
+     sandboxMode: "read-only",
+     approvalPolicy: "never",
+   });
+
+   const { events } = await thread.runStreamed(prompt);
+   for await (const event of events) {
+     if (event.type === "item.completed" && event.item?.type === "agent_message") {
+       console.log(event.item.text);
+     }
+     if (event.type === "turn.failed") {
+       console.error("Codex SDK turn failed:", event.error?.message ?? event.error);
+     }
+   }
+   EOF
+
+   npm install
+   npm run run
+   ```
+
 ### For Claude Code (Plugin)
 
 ```bash
@@ -160,6 +215,11 @@ NOTEBOOK_ID="my-test-notebook" \
 scripts/codex-skill-e2e.sh
 ```
 
+Validation checklist (expected results):
+- `get_health` reports `authenticated: true`
+- The target notebook exists or is added successfully
+- A response is returned with citations
+
 ### Codex Improvement Notes
 
 - Prefer smaller MCP tool profiles when available to reduce context load (see notebooklm-mcp docs).
@@ -178,6 +238,11 @@ Optional override:
 ```bash
 QUESTION="What are the key risks in this architecture?" make codex-ask-all
 ```
+
+Validation checklist (expected results):
+- Each notebook returns a labeled section
+- Citations are included when NotebookLM provides them
+- Timeouts are retried once and reported
 
 ## Plugin Commands
 
