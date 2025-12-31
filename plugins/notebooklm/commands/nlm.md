@@ -76,9 +76,8 @@ This command queries **all notebooks in your library simultaneously** using para
 5. If only one notebook, suggest using `/nlm ask` instead for efficiency
 6. **For each notebook, spawn a parallel subagent** using the Task tool:
    - Each subagent should:
-     a. Select its assigned notebook using `select_notebook`
-     b. Ask the question using `ask_question`
-     c. Return the response with notebook name/ID
+     a. Ask the question using `ask_question` with `notebook_id` (avoid `select_notebook` to prevent shared-state races)
+     b. Return the response with notebook name/ID
 7. Wait for all subagents to complete
 8. Aggregate and display responses in a comparative format:
 
@@ -130,8 +129,7 @@ For each notebook, use the Task tool with this prompt:
 Query the notebook "[notebook_name]" (ID: [notebook_id]) with this question: "[user_question]"
 
 Steps:
-1. Use select_notebook to select notebook ID "[notebook_id]"
-2. Use ask_question with the question
+1. Use ask_question with the question and notebook_id "[notebook_id]"
 3. Return the full response including any citations
 
 Format your response as:
@@ -152,6 +150,7 @@ SOURCES: [citations if any]
 - Results are aggregated with clear source attribution
 - A summary table helps compare answers across sources
 - Rate limits apply (50 queries/day free tier counts each notebook query separately)
+- If a notebook query times out, retry once with a longer timeout (e.g., browser_options.timeout_ms=60000)
 
 ### `add` - Add Notebook
 
