@@ -166,7 +166,7 @@ Notes:
 - This server uses cookie extraction instead of `setup_auth`.
 - Tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
 - Use `notebooklm-patterns` skill guidance for the alternate toolset.
- - Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
+- Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
 ### Recommended “Best of Both” (RPC-first)
 
@@ -175,6 +175,15 @@ Keep both servers configured, but treat `notebooklm-rpc` as the default when ava
 - `notebooklm` (Playwright auth, stable ask/list fallback)
 
 If `setup_auth` fails or you need Drive sync/Studio tools, run `scripts/notebooklm-auth-rpc.sh` and use the RPC server.
+
+## When to Use This Repo vs. jacob-bd Only
+
+You can use `jacob-bd/notebooklm-mcp` directly if you only need the RPC server tools.
+This repo adds:
+- Codex/Claude CLI wiring (`/nlm` commands, skills, tool routing).
+- Hybrid auth with fallbacks (Playwright + cookie extraction).
+- Repeatable scripts and Pixi tasks for validation and multi-notebook queries.
+- Centralized MCP configuration and agent playbooks.
 
 Add to `claude_desktop_config.json`:
 ```json
