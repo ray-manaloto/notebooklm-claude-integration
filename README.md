@@ -138,6 +138,34 @@ claude plugin marketplace add .
 npm install -g notebooklm-mcp
 ```
 
+## Alternate NotebookLM MCP (HTTP/RPC, jacob-bd)
+
+This repo also supports the HTTP/RPC-based MCP server from `jacob-bd/notebooklm-mcp`, which exposes additional tools (notebook creation, Drive sync, Studio artifacts).
+
+Install + auth:
+```bash
+uv tool install notebooklm-mcp-server
+scripts/notebooklm-auth-rpc.sh
+```
+
+Register the MCP server:
+```bash
+codex mcp add notebooklm-rpc -- notebooklm-mcp
+```
+
+Notes:
+- This server uses cookie extraction instead of `setup_auth`.
+- Tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
+- Use `notebooklm-patterns` skill guidance for the alternate toolset.
+
+### Recommended “Best of Both”
+
+Keep both servers configured:
+- `notebooklm` (Playwright auth, stable ask/list flow)
+- `notebooklm-rpc` (expanded toolset, faster queries)
+
+If `setup_auth` fails or you need Drive sync/Studio tools, run `scripts/notebooklm-auth-rpc.sh` and use the RPC server.
+
 Add to `claude_desktop_config.json`:
 ```json
 {
@@ -265,6 +293,15 @@ QUESTION="What are the key risks in this architecture?" make codex-ask-all
 With a profile override:
 ```bash
 NOTEBOOKLM_PROFILE=minimal QUESTION="What are the key risks in this architecture?" make codex-ask-all
+```
+
+### Alternate MCP (HTTP/RPC) Queries
+
+Use the `notebooklm-rpc` server (after running `notebooklm-mcp-auth`):
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Summarize the key sources in this notebook." \
+scripts/codex-ask-all-rpc.sh
 ```
 
 Filter by notebook IDs (comma-separated):

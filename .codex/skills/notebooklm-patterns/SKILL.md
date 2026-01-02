@@ -18,6 +18,24 @@ Use these tools when available:
 - `mcp__notebooklm__select_notebook` — set active notebook by id
 - `mcp__notebooklm__get_notebook` — fetch notebook details
 - `mcp__notebooklm__search_notebooks` — search library by query
+
+### Alternate MCP (HTTP/RPC, jacob-bd)
+
+If the server name is `notebooklm-rpc`, tool names change and authentication is cookie extraction (no `setup_auth`):
+- `mcp__notebooklm-rpc__notebook_list` — list notebooks
+- `mcp__notebooklm-rpc__notebook_get` — notebook details + sources
+- `mcp__notebooklm-rpc__notebook_query` — ask questions
+- `mcp__notebooklm-rpc__notebook_add_url` / `notebook_add_drive` / `notebook_add_text` — add sources
+- `mcp__notebooklm-rpc__source_list_drive` / `source_sync_drive` — Drive freshness + sync
+- `mcp__notebooklm-rpc__audio_overview_create` / `video_overview_create` / `infographic_create` / `slide_deck_create` — Studio artifacts
+
+Auth flow for this server:
+1. Run `notebooklm-mcp-auth` (opens Chrome, stores cookies in `~/.notebooklm-mcp/auth.json`).
+2. Start the MCP server and retry queries.
+
+Hybrid guidance:
+- Prefer `mcp__notebooklm__setup_auth` for the standard server (interactive Playwright flow).
+- If auth fails or you need expanded tools, use `notebooklm-mcp-auth` and target `notebooklm-rpc`.
 - `mcp__notebooklm__ask_question` — ask a question (optionally with `session_id`)
 
 If the tools are missing or error with “tool not found,” ask the user to configure the MCP server using `mcp-config/README.md` and retry.

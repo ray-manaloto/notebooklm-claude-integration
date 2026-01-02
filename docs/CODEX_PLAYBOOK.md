@@ -18,6 +18,22 @@ This playbook is optimized for Codex CLI/SDK agents to follow step by step and v
   codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-check."
   ```
 
+### Optional: HTTP/RPC NotebookLM MCP (Expanded Tools)
+
+If you want notebook creation, Drive sync, and Studio artifacts, use the `jacob-bd/notebooklm-mcp` server:
+
+```bash
+uv tool install notebooklm-mcp-server
+scripts/notebooklm-auth-rpc.sh
+codex mcp add notebooklm-rpc -- notebooklm-mcp
+```
+
+This server uses cookie extraction (`notebooklm-mcp-auth`) instead of `setup_auth`, and tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
+
+### Recommended Hybrid Setup
+
+Configure both `notebooklm` and `notebooklm-rpc`. Use `notebooklm` for the standard ask/list flow and switch to `notebooklm-rpc` when you need Drive sync, notebook creation, or Studio artifacts.
+
 ## 2) Validate (Fresh Repo)
 
 Run an end-to-end validation in a clean temp directory:
@@ -109,6 +125,15 @@ Avoid off-topic answers by filtering to specific notebook IDs:
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Provide modern best practices for integration tests without mocks." \
 make codex-ask-all
+```
+
+### Targeted Queries (HTTP/RPC Server)
+
+If using `notebooklm-rpc`:
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Provide modern best practices for integration tests without mocks." \
+scripts/codex-ask-all-rpc.sh
 ```
 
 ## Local NotebookLM Integration Test

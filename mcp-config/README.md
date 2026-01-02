@@ -108,6 +108,7 @@ Edit `servers.json` to customize:
 | Server | Purpose | Requires |
 |--------|---------|----------|
 | **notebooklm** | Query NotebookLM notebooks | - |
+| **notebooklm-rpc** | NotebookLM MCP (HTTP/RPC) with expanded tools | `notebooklm-mcp` binary installed + `notebooklm-mcp-auth` cookies |
 | **github** | GitHub repo/PR/issue management | GITHUB_TOKEN |
 | **brave-search** | Web search via Brave API | BRAVE_API_KEY |
 | **context7** | Up-to-date library documentation | - |

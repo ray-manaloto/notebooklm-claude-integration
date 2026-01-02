@@ -26,3 +26,5 @@ tests/notebooklm-integration.sh
 
 - Requires a local Chrome login for NotebookLM.
 - Uses `NOTEBOOKLM_PROFILE` if provided.
+- The alternate `notebooklm-rpc` server uses `notebooklm-mcp-auth` and different tool names; these scripts target the `notebooklm` server.
+- Use `scripts/notebooklm-auth-rpc.sh` to bootstrap the RPC auth flow if needed.

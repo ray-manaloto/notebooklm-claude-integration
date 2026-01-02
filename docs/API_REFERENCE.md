@@ -359,6 +359,17 @@ Clear and re-authenticate.
 
 ---
 
+## Alternate MCP (HTTP/RPC, jacob-bd)
+
+If you configure the `notebooklm-rpc` server (`jacob-bd/notebooklm-mcp`), tool names differ and authentication uses cookie extraction:
+
+- **Auth:** `notebooklm-mcp-auth` (writes `~/.notebooklm-mcp/auth.json`)
+- **Core tools:** `notebook_list`, `notebook_get`, `notebook_query`, `notebook_add_url`, `notebook_add_drive`, `notebook_add_text`
+- **Drive sync:** `source_list_drive`, `source_sync_drive`
+- **Studio artifacts:** `audio_overview_create`, `video_overview_create`, `infographic_create`, `slide_deck_create`
+
+These tools are prefixed by the server name when used via MCP (e.g., `mcp__notebooklm-rpc__notebook_query`).
+
 ## Data Structures
 
 ### Notebook Object

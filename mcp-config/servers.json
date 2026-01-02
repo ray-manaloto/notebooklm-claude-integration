@@ -4,6 +4,11 @@
     "args": ["-y", "notebooklm-mcp@latest"],
     "description": "Query NotebookLM notebooks with citation-backed answers"
   },
+  "notebooklm-rpc": {
+    "command": "notebooklm-mcp",
+    "args": [],
+    "description": "NotebookLM MCP (HTTP/RPC) with expanded tools; requires notebooklm-mcp-server installed"
+  },
   "github": {
     "command": "npx",
     "args": ["-y", "@modelcontextprotocol/server-github"],
