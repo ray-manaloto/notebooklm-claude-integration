@@ -168,11 +168,11 @@ Notes:
 - Use `notebooklm-patterns` skill guidance for the alternate toolset.
  - Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
-### Recommended “Best of Both”
+### Recommended “Best of Both” (RPC-first)
 
-Keep both servers configured:
-- `notebooklm` (Playwright auth, stable ask/list flow)
+Keep both servers configured, but treat `notebooklm-rpc` as the default when available:
 - `notebooklm-rpc` (expanded toolset, faster queries)
+- `notebooklm` (Playwright auth, stable ask/list fallback)
 
 If `setup_auth` fails or you need Drive sync/Studio tools, run `scripts/notebooklm-auth-rpc.sh` and use the RPC server.
 

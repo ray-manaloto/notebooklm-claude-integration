@@ -370,6 +370,10 @@ If you configure the `notebooklm-rpc` server (`jacob-bd/notebooklm-mcp`), tool n
 
 These tools are prefixed by the server name when used via MCP (e.g., `mcp__notebooklm-rpc__notebook_query`).
 
+### Recommended Default
+
+When both servers are configured, prefer `notebooklm-rpc` for daily usage and fall back to `notebooklm` only when RPC tools are unavailable or auth fails.
+
 ## Data Structures
 
 ### Notebook Object
