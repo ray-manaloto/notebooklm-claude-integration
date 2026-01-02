@@ -21,6 +21,7 @@ This roadmap condenses NotebookLM research into prioritized, actionable steps.
 - **Configurable answer timeout**: Patch/fork `notebooklm-mcp` to honor `browser_options.timeout_ms` for answer waits.
 - **Token safety**: Enforce output caps and progressive disclosure for large notebooks; document chunking patterns.
 - **Stability scoring**: Introduce “judgment” pass to compare NotebookLM outputs with repository state.
+- **Bun migration (post-verify)**: Evaluate Bun after the Node-based flow is stable end-to-end; avoid dual lockfiles.
 
 ## Long-Term / R&D
 
