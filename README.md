@@ -145,7 +145,7 @@ This repo also supports the HTTP/RPC-based MCP server from `jacob-bd/notebooklm-
 Install + auth:
 ```bash
 uv tool install notebooklm-mcp-server
-scripts/notebooklm-auth-rpc.sh
+GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
 ```
 
 Register the MCP server:
@@ -157,6 +157,7 @@ Notes:
 - This server uses cookie extraction instead of `setup_auth`.
 - Tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
 - Use `notebooklm-patterns` skill guidance for the alternate toolset.
+ - Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
 ### Recommended “Best of Both”
 

@@ -24,11 +24,12 @@ If you want notebook creation, Drive sync, and Studio artifacts, use the `jacob-
 
 ```bash
 uv tool install notebooklm-mcp-server
-scripts/notebooklm-auth-rpc.sh
+GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
 codex mcp add notebooklm-rpc -- notebooklm-mcp
 ```
 
 This server uses cookie extraction (`notebooklm-mcp-auth`) instead of `setup_auth`, and tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
+Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
 ### Recommended Hybrid Setup
 
