@@ -42,4 +42,4 @@ git add README.md
 
 git commit -q -m "init"
 
-codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth and wait. List notebooks and add ${NOTEBOOK_URL} only if it is not already present (use name '${NOTEBOOK_NAME}', description '${NOTEBOOK_DESC}', topics ['notebooklm','codex','mcp','integration','testing']). Select ${NOTEBOOK_ID}, then ask: 'What is this notebook about?' Return a 3-bullet summary with citations."
+codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-run mcp__notebooklm__get_health. If still not authenticated, stop and report the failure. List notebooks and add ${NOTEBOOK_URL} only if it is not already present (use name '${NOTEBOOK_NAME}', description '${NOTEBOOK_DESC}', topics ['notebooklm','codex','mcp','integration','testing']). Select ${NOTEBOOK_ID}, then ask: 'What is this notebook about?' Return a 3-bullet summary with citations."

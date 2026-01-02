@@ -33,9 +33,9 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
    ```bash
    codex mcp add notebooklm -- npx -y notebooklm-mcp@latest
    ```
-2. Authenticate once (browser login). The auth layer will persist cookies:
+2. Authenticate once (browser login). The auth layer will persist cookies. The scripts will open Chrome when auth is missing and stop if auth still fails:
    ```bash
-   codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth and wait."
+   codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-check."
    ```
 3. Run the full E2E test (downloads the skill from GitHub into a temp repo and queries a notebook):
    ```bash

@@ -12,7 +12,7 @@ tests/notebooklm-integration.sh
 
 ## What It Does
 
-- Checks auth status and triggers `setup_auth` if needed.
+- Checks auth status and triggers `setup_auth` with a visible Chrome window if needed (fails fast if auth still does not resolve).
 - Filters to the requested notebook IDs.
 - Runs `ask_question` with retry and off-topic guardrails.
 

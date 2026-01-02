@@ -13,9 +13,9 @@ This playbook is optimized for Codex CLI/SDK agents to follow step by step and v
   ```bash
   export NOTEBOOKLM_PROFILE=standard
   ```
-- Authentication completed once:
+- Authentication completed once (scripts will open Chrome when auth is missing and stop if auth still fails):
   ```bash
-  codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth and wait."
+  codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-check."
   ```
 
 ## 2) Validate (Fresh Repo)
