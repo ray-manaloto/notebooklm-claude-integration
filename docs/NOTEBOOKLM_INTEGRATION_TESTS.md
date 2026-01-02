@@ -10,6 +10,13 @@ QUESTION="Summarize the key sources in this notebook." \
 tests/notebooklm-integration.sh
 ```
 
+Pixi task:
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Summarize the key sources in this notebook." \
+pixi run codex-ask-all
+```
+
 ## What It Does
 
 - Checks auth status and triggers `setup_auth` with a visible Chrome window if needed (fails fast if auth still does not resolve).

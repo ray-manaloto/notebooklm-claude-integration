@@ -28,6 +28,15 @@ GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
 codex mcp add notebooklm-rpc -- notebooklm-mcp
 ```
 
+Pixi task:
+```bash
+pixi run notebooklm-auth-rpc
+```
+Override account:
+```bash
+GOOGLE_ACCOUNT=your@email pixi run notebooklm-auth-rpc
+```
+
 This server uses cookie extraction (`notebooklm-mcp-auth`) instead of `setup_auth`, and tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
 Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
@@ -135,6 +144,13 @@ If using `notebooklm-rpc`:
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Provide modern best practices for integration tests without mocks." \
 scripts/codex-ask-all-rpc.sh
+```
+
+Pixi task:
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Provide modern best practices for integration tests without mocks." \
+pixi run codex-ask-all-rpc
 ```
 
 ## Local NotebookLM Integration Test

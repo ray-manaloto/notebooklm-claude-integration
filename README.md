@@ -148,6 +148,15 @@ uv tool install notebooklm-mcp-server
 GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
 ```
 
+Pixi task (recommended for repeatable runs):
+```bash
+pixi run notebooklm-auth-rpc
+```
+Override account:
+```bash
+GOOGLE_ACCOUNT=your@email pixi run notebooklm-auth-rpc
+```
+
 Register the MCP server:
 ```bash
 codex mcp add notebooklm-rpc -- notebooklm-mcp
@@ -303,6 +312,13 @@ Use the `notebooklm-rpc` server (after running `notebooklm-mcp-auth`):
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Summarize the key sources in this notebook." \
 scripts/codex-ask-all-rpc.sh
+```
+
+Pixi task:
+```bash
+NOTEBOOK_IDS=pytest-patterns \
+QUESTION="Summarize the key sources in this notebook." \
+pixi run codex-ask-all-rpc
 ```
 
 Filter by notebook IDs (comma-separated):

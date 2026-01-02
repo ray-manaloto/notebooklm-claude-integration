@@ -1,0 +1,12 @@
+[project]
+name = "notebooklm-claude-integration"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64"]
+
+[tasks]
+notebooklm-auth-rpc = { cmd = "GOOGLE_ACCOUNT=${GOOGLE_ACCOUNT:-ray.manaloto@gmail.com} bash scripts/notebooklm-auth-rpc.sh" }
+codex-ask-all = { cmd = "bash scripts/codex-ask-all.sh" }
+codex-ask-all-rpc = { cmd = "bash scripts/codex-ask-all-rpc.sh" }
+codex-validate-setup = { cmd = "bash scripts/codex-validate-setup.sh" }
+codex-skill-e2e = { cmd = "bash scripts/codex-skill-e2e.sh" }
