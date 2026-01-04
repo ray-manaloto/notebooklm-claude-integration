@@ -6,6 +6,7 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import subprocess
 import sys
 from typing import Any
@@ -42,7 +43,7 @@ def _load_args(args_json: str) -> dict[str, Any]:
         raise ValueError(message) from exc
     if not isinstance(parsed, dict):
         message = "Args JSON must decode to an object"
-        raise ValueError(message)
+        raise TypeError(message)
     return parsed
 
 
@@ -61,13 +62,18 @@ def _build_prompt(tool: str, args: dict[str, Any]) -> str:
 
 
 def _run_codex(prompt: str) -> None:
+    codex_path = shutil.which("codex")
+    if not codex_path:
+        message = "codex CLI not found on PATH"
+        raise RuntimeError(message)
     subprocess.run(
-        ["codex", "--enable", "skills", "exec", prompt],
+        [codex_path, "--enable", "skills", "exec", prompt],
         check=True,
     )  # noqa: S603
 
 
 def main() -> int:
+    """Execute the requested NotebookLM tool via Codex."""
     _configure_logging()
     parser = argparse.ArgumentParser(
         description="Run a NotebookLM MCP tool via Codex CLI.",
@@ -92,8 +98,8 @@ def main() -> int:
     args_json = parsed.args_json or os.environ.get("NLM_ARGS_JSON", "")
     try:
         tool_args = _load_args(args_json)
-    except ValueError as exc:
-        logger.error(str(exc))
+    except (ValueError, TypeError):
+        logger.exception("Invalid args JSON.")
         return 2
 
     prompt = _build_prompt(tool, tool_args)
