@@ -4,9 +4,31 @@ version = "0.1.0"
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "osx-64", "linux-64"]
 
+[dependencies]
+python = "*"
+pre-commit = "*"
+ruff = "*"
+
 [tasks]
-notebooklm-auth-rpc = { cmd = "GOOGLE_ACCOUNT=${GOOGLE_ACCOUNT:-ray.manaloto@gmail.com} bash scripts/notebooklm-auth-rpc.sh" }
-codex-ask-all = { cmd = "bash scripts/codex-ask-all.sh" }
-codex-ask-all-rpc = { cmd = "bash scripts/codex-ask-all-rpc.sh" }
-codex-validate-setup = { cmd = "bash scripts/codex-validate-setup.sh" }
-codex-skill-e2e = { cmd = "bash scripts/codex-skill-e2e.sh" }
+pixi-update = { cmd = "python tools/pixi_bootstrap.py update" }
+pixi-install = { cmd = "python tools/pixi_bootstrap.py install" }
+pixi-sync = { cmd = "python tools/pixi_bootstrap.py sync" }
+notebooklm-auth-rpc = { cmd = "python tools/codex_tasks.py auth-rpc" }
+notebooklm-auth-check-rpc = { cmd = "python tools/codex_tasks.py auth-check-rpc" }
+codex-ask-all = { cmd = "python tools/codex_tasks.py ask-all" }
+codex-ask-all-subagents = { cmd = "python tools/codex_tasks.py ask-all-subagents" }
+codex-ask-all-rpc = { cmd = "python tools/codex_tasks.py ask-all-rpc" }
+codex-validate-setup = { cmd = "python tools/codex_tasks.py validate-setup" }
+codex-skill-e2e = { cmd = "python tools/codex_tasks.py skill-e2e" }
+codex-bootstrap-auth = { cmd = "python tools/codex_tasks.py bootstrap-auth" }
+codex-bootstrap-parallel = { cmd = "python tools/codex_tasks.py bootstrap-parallel" }
+notebooklm-integration = { cmd = "python tools/codex_tasks.py notebooklm-integration" }
+hooks-install = { cmd = "pre-commit install" }
+hooks-run = { cmd = "pre-commit run --all-files" }
+simulation = { cmd = "python tools/run_simulation.py", inputs = ["tests/**", "tools/**", "pixi.toml", "pixi.lock"], outputs = [".pixi-cache/simulation.stamp"] }
+ruff-check = { cmd = "python tools/run_ruff.py", inputs = ["**/*.py", "pyproject.toml", "pixi.toml", "pixi.lock", ".pre-commit-config.yaml"], outputs = [".pixi-cache/ruff.stamp"] }
+ruff-format = { cmd = "ruff format ." }
+ruff-format-check = { cmd = "ruff format --check ." }
+mcp-install-desktop = { cmd = "python tools/mcp_config_tasks.py install-desktop" }
+mcp-install-code = { cmd = "python tools/mcp_config_tasks.py install-code" }
+mcp-update-all = { cmd = "python tools/mcp_config_tasks.py update-all" }

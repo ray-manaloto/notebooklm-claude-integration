@@ -5,55 +5,27 @@ This playbook is optimized for Codex CLI/SDK agents to follow step by step and v
 ## 1) Setup Checklist
 
 - `codex` CLI installed
-- NotebookLM MCP server configured:
+- NotebookLM MCP server (RPC) configured:
   ```bash
-  codex mcp add notebooklm -- npx -y notebooklm-mcp@latest
+  uv tool install notebooklm-mcp-server
+  codex mcp add notebooklm-rpc notebooklm-mcp
   ```
-- Optional: choose a smaller tool profile to reduce context load:
+- Authentication completed once:
   ```bash
-  export NOTEBOOKLM_PROFILE=standard
+  pixi run notebooklm-auth-rpc
   ```
-- Authentication completed once (scripts will open Chrome when auth is missing and stop if auth still fails):
-  ```bash
-  codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-check."
-  ```
-
-### Optional: HTTP/RPC NotebookLM MCP (Expanded Tools)
-
-If you want notebook creation, Drive sync, and Studio artifacts, use the `jacob-bd/notebooklm-mcp` server:
-
-```bash
-uv tool install notebooklm-mcp-server
-GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
-codex mcp add notebooklm-rpc -- notebooklm-mcp
-```
-
-Pixi task:
-```bash
-pixi run notebooklm-auth-rpc
-```
-Override account:
-```bash
-GOOGLE_ACCOUNT=your@email pixi run notebooklm-auth-rpc
-```
-
-This server uses cookie extraction (`notebooklm-mcp-auth`) instead of `setup_auth`, and tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
 Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
-
-### Recommended Hybrid Setup
-
-Configure both `notebooklm` and `notebooklm-rpc`. Use `notebooklm` for the standard ask/list flow and switch to `notebooklm-rpc` when you need Drive sync, notebook creation, or Studio artifacts.
 
 ## 2) Validate (Fresh Repo)
 
 Run an end-to-end validation in a clean temp directory:
 
 ```bash
-scripts/codex-validate-setup.sh
+pixi run codex-validate-setup
 ```
 
 Expected results:
-- `get_health` shows `authenticated: true`
+- RPC auth is valid (cookies persisted via `save_auth_tokens`)
 - At least one notebook is found
 - Multi-notebook query returns labeled responses with citations
 
@@ -61,8 +33,8 @@ Expected results:
 
 Always query NotebookLM before changing code:
 
-1. `list_notebooks`
-2. `ask_question` with `notebook_id`
+1. `notebook_list`
+2. `notebook_query` with `notebook_id`
 3. Summarize with citations
 4. Only then proceed to edits
 
@@ -73,9 +45,8 @@ Recommended prompt patterns:
 
 ## 4) Multi-Notebook Query (Safe Parallelization)
 
-- Use `ask_question` with `notebook_id` for each notebook.
-- Avoid `select_notebook` inside parallel workers (shared state).
-- Retry once with `browser_options.timeout_ms=60000` on timeouts.
+- Use `notebook_query` with `notebook_id` for each notebook.
+- Retry once on timeouts, then record a timeout and continue.
 
 ## 5) Multi-Agent Loop (Best Practice)
 
@@ -108,23 +79,10 @@ codex --enable skills exec "Use notebooklm-patterns. List notebooks. If subagent
 
 ## Parallel Auth Bootstrap
 
-Use a single interactive login first, then allow parallel workers to reuse the profile:
+Use a single interactive login first, then allow parallel workers to reuse cookies:
 
 ```bash
-NOTEBOOK_PROFILE_STRATEGY=auto \
-NOTEBOOK_CLONE_PROFILE=true \
-make codex-bootstrap-parallel
-```
-
-Bootstrap only (no query):
-```bash
-make codex-bootstrap-auth
-```
-
-SDK example:
-```bash
-cd codex-sdk-test
-QUESTION="Summarize auth flow changes." npm run test:notebooklm-ask-all
+pixi run notebooklm-auth-rpc
 ```
 
 ## Targeted Notebook Queries
@@ -134,19 +92,11 @@ Avoid off-topic answers by filtering to specific notebook IDs:
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Provide modern best practices for integration tests without mocks." \
-make codex-ask-all
+pixi run codex-ask-all
 ```
 
-### Targeted Queries (HTTP/RPC Server)
+### Targeted Queries (RPC)
 
-If using `notebooklm-rpc`:
-```bash
-NOTEBOOK_IDS=pytest-patterns \
-QUESTION="Provide modern best practices for integration tests without mocks." \
-scripts/codex-ask-all-rpc.sh
-```
-
-Pixi task:
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Provide modern best practices for integration tests without mocks." \
@@ -160,7 +110,7 @@ Run the local end-to-end NotebookLM script (uses your stored Chrome auth):
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Summarize the key sources in this notebook." \
-tests/notebooklm-integration.sh
+pixi run notebooklm-integration
 ```
 
 ## 6) Data Quality & Triangulation
@@ -174,6 +124,6 @@ Keep notebooks domain-specific and tag them consistently. Prefer one notebook pe
 
 ## 7) Troubleshooting
 
-- If queries time out, retry once with `browser_options.timeout_ms=60000`.
-- If auth fails repeatedly, run `mcp__notebooklm__re_auth`.
+- If queries time out, retry once, then record a timeout and continue.
+- If auth fails repeatedly, rerun `pixi run notebooklm-auth-rpc`.
 - If output looks unrelated, the notebook likely doesn’t cover the question—switch notebooks or refine the question.

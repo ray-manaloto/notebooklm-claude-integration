@@ -1,9 +1,4 @@
 {
-  "notebooklm": {
-    "command": "npx",
-    "args": ["-y", "notebooklm-mcp@latest"],
-    "description": "Query NotebookLM notebooks with citation-backed answers"
-  },
   "notebooklm-rpc": {
     "command": "notebooklm-mcp",
     "args": [],

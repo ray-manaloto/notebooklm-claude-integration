@@ -11,7 +11,8 @@ Complete guide for installing and using the NotebookLM plugin for Claude Code.
 
 2. **NotebookLM MCP Server** - The plugin requires this MCP server:
    ```bash
-   claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+   uv tool install notebooklm-mcp-server
+   claude mcp add notebooklm-rpc -- notebooklm-mcp
    ```
 
 3. **Google Chrome** - Required for browser automation
@@ -77,11 +78,11 @@ claude plugin list
 ## First-Time Authentication
 
 ```bash
-# Check authentication status
-/nlm auth
+# Run notebooklm-mcp-auth and complete login
+notebooklm-mcp-auth
 
-# Setup authentication (opens browser)
-/nlm auth setup
+# Save RPC auth cookies
+/nlm auth rpc
 ```
 
 A Chrome browser will open for Google login. Complete the login and return to Claude Code.
@@ -90,32 +91,23 @@ A Chrome browser will open for Google login. Complete the login and return to Cl
 
 | Command | Description |
 |---------|-------------|
-| `/nlm ask <question>` | Ask a question to the active notebook |
-| `/nlm add <url>` | Add a notebook to library (auto-selects as active) |
-| `/nlm list` | List all notebooks in library |
-| `/nlm select <name>` | Set active notebook for queries |
-| `/nlm auth` | Check authentication status |
-| `/nlm auth setup` | First-time authentication |
-| `/nlm auth reset` | Clear and re-authenticate |
+| `/nlm ask <question>` | Ask a question to a notebook by ID |
+| `/nlm list` | List all notebooks |
+| `/nlm create <name>` | Create a new notebook |
+| `/nlm auth rpc` | Save RPC auth cookies |
 
 ## Usage Examples
 
-### Add Your First Notebook
+### List Notebooks
 
 ```bash
-/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
+/nlm list
 ```
-
-The plugin will:
-1. Query the notebook to discover its content
-2. Extract name, description, and topics
-3. Add it to your library
-4. Set it as the active notebook
 
 ### Ask Questions
 
 ```bash
-/nlm ask "How do I implement OAuth2 in FastAPI?"
+/nlm ask "Notebook ID: <id>. How do I implement OAuth2 in FastAPI?"
 ```
 
 Response includes:
@@ -129,11 +121,8 @@ Response includes:
 # List all notebooks
 /nlm list
 
-# Switch to a different notebook
-/nlm select "FastAPI Documentation"
-
-# Search notebooks by topic
-/nlm select python
+# Use notebook_id in your ask prompt
+/nlm ask "Notebook ID: <id>. Summarize the key sources."
 ```
 
 ## Research Agent
@@ -164,11 +153,11 @@ The agent will:
                                │                        │
                                v                        v
                         ┌──────────────┐         ┌─────────────┐
-                        │ MCP Tools    │         │  Playwright │
-                        │ - ask_question│        │   Browser   │
-                        │ - add_notebook│        └─────────────┘
-                        │ - list_notebooks│             │
-                        │ - select_notebook│            v
+                        │ MCP Tools    │         │ Auth Helper │
+                        │ - notebook_list│       │ (cookies)   │
+                        │ - notebook_query│      └─────────────┘
+                        │ - notebook_add_url│            │
+                        │ - studio_status│               v
                         └──────────────┘         ┌─────────────┐
                                                  │ NotebookLM  │
                                                  │   (Gemini)  │
@@ -176,10 +165,9 @@ The agent will:
 ```
 
 The plugin uses MCP tools to communicate with the NotebookLM MCP server, which handles:
-- Browser automation via Playwright
-- Google authentication
-- Session management
-- Notebook library storage
+- Cookie-based authentication
+- Notebook and source management
+- Research and Studio artifact generation
 
 ## Plugin Structure
 
@@ -202,23 +190,24 @@ plugins/notebooklm/
 
 ### Not Authenticated
 ```bash
-/nlm auth setup
+notebooklm-mcp-auth
+/nlm auth rpc
 ```
 
 ### Rate Limited (50 queries/day free tier)
 - Wait for daily reset, or
-- Use `/nlm auth reset` to switch Google accounts
+- Re-run `notebooklm-mcp-auth` with a different Google account
 - Consider Google AI Pro/Ultra for 5x limits
 
 ### Wrong Notebook Being Queried
 ```bash
 /nlm list           # See all notebooks
-/nlm select <name>  # Switch to correct one
+# Re-run /nlm ask with the correct notebook_id
 ```
 
 ### Browser Issues
 ```bash
-/nlm auth reset     # Clears browser state and re-authenticates
+notebooklm-mcp-auth # Refresh cookies
 ```
 
 ### Plugin Not Loading
@@ -247,7 +236,8 @@ claude mcp list
 # Should show: notebooklm
 
 # If not present, add it
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # Restart Claude Code after adding
 claude
@@ -263,7 +253,7 @@ claude plugin uninstall notebooklm
 claude plugin marketplace remove notebooklm-plugin
 
 # Optionally remove the MCP server
-claude mcp remove notebooklm
+claude mcp remove notebooklm-rpc
 ```
 
 ## MCP Tools Reference
@@ -272,15 +262,28 @@ The plugin uses these NotebookLM MCP tools:
 
 | Tool | Purpose |
 |------|---------|
-| `ask_question` | Query a notebook |
-| `add_notebook` | Add notebook to library |
-| `list_notebooks` | List all notebooks |
-| `select_notebook` | Set active notebook |
-| `get_notebook` | Get notebook details |
-| `search_notebooks` | Search by query |
-| `get_health` | Check auth status |
-| `setup_auth` | Initial authentication |
-| `re_auth` | Reset authentication |
+| `notebook_list` | List all notebooks |
+| `notebook_create` | Create a new notebook |
+| `notebook_get` | Get notebook details |
+| `notebook_describe` | Summarize notebook content |
+| `notebook_query` | Ask a question |
+| `notebook_add_url` | Add URL/YouTube source |
+| `notebook_add_text` | Add text source |
+| `notebook_add_drive` | Add Drive source |
+| `source_list_drive` | List Drive sources w/ freshness |
+| `source_sync_drive` | Sync stale Drive sources |
+| `source_delete` | Delete a source |
+| `source_describe` | Summarize a source |
+| `research_start` | Start research |
+| `research_status` | Poll research progress |
+| `research_import` | Import research sources |
+| `chat_configure` | Configure chat behavior |
+| `audio_overview_create` | Generate audio overview |
+| `video_overview_create` | Generate video overview |
+| `infographic_create` | Generate infographic |
+| `slide_deck_create` | Generate slide deck |
+| `studio_status` | Check studio job status |
+| `studio_delete` | Delete studio artifacts |
 
 ## Limits
 

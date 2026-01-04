@@ -2,11 +2,11 @@
 
 ## Summary
 
-Some notebooks consistently time out in `ask_question`. The MCP server uses a fixed 120s wait for streaming answers, which ignores `browser_options.timeout_ms`.
+Some notebooks consistently time out in `notebook_query`. The MCP server uses a fixed 120s wait for streaming answers.
 
 ## Current Evidence
 
-- `ask_question` passes `browser_options.timeout_ms` → `CONFIG.browserTimeout`, but that only affects page navigation, not answer wait.
+- `notebook_query` uses a hardcoded 120s wait for streaming answers.
 - `waitForLatestAnswer` uses a hardcoded 120s timeout in `src/session/browser-session.ts` (upstream `notebooklm-mcp`).
 - Iceoryx notebook timed out repeatedly; other notebooks returned successfully.
 

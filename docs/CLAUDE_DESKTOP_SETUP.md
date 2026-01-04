@@ -12,7 +12,7 @@
 Open your terminal and run:
 
 ```bash
-npm install -g notebooklm-mcp
+uv tool install notebooklm-mcp-server
 ```
 
 **Expected output:**
@@ -44,24 +44,22 @@ nano ~/.config/Claude/claude_desktop_config.json
 ```json
 {
   "mcpServers": {
-    "notebooklm": {
-      "command": "npx",
-      "args": ["-y", "notebooklm-mcp@latest"],
+    "notebooklm-rpc": {
+      "command": "notebooklm-mcp",
       "env": {}
     }
   }
 }
 ```
 
-**If the file already has content**, just add the `notebooklm` section inside `mcpServers`:
+**If the file already has content**, just add the `notebooklm-rpc` section inside `mcpServers`:
 
 ```json
 {
   "mcpServers": {
     "existing-server": { ... },
-    "notebooklm": {
-      "command": "npx",
-      "args": ["-y", "notebooklm-mcp@latest"],
+    "notebooklm-rpc": {
+      "command": "notebooklm-mcp",
       "env": {}
     }
   }
@@ -88,11 +86,11 @@ What MCP tools do you have available?
 ```
 
 You should see Claude respond with a list including NotebookLM tools like:
-- `add_notebook`
-- `ask_notebook`
-- `list_notebooks`
-- `activate_notebook`
-- etc.
+- `notebook_list`
+- `notebook_query`
+- `notebook_add_url`
+- `source_list_drive`
+- `studio_status`
 
 ---
 
@@ -100,14 +98,12 @@ You should see Claude respond with a list including NotebookLM tools like:
 
 ### First-Time Authentication
 
-In Claude Desktop, send this message:
+1) Run `notebooklm-mcp-auth` in a terminal and complete Google login.
+2) In Claude Desktop, send this message:
 
 ```
-Add my NotebookLM notebook: https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069
+List my NotebookLM notebooks
 ```
-
-**What will happen:**
-1. Chrome will open automatically
 2. You'll see Google login page
 3. Log in with your Google account
 4. Chrome will navigate to your notebook
@@ -149,28 +145,15 @@ Claude will automatically:
 User: What MCP tools do you have available?
 
 Claude: I have access to several MCP tools including:
-- NotebookLM tools (add_notebook, ask_notebook, list_notebooks, etc.)
+- NotebookLM tools (notebook_list, notebook_query, notebook_add_url, etc.)
 - [other tools if you have them]
-```
-
-**Notebook added:**
-```
-User: Add my notebook: https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069
-
-Claude: [Opens Chrome for login]
-        [Discovers notebook content]
-        I found a notebook with [X] sources.
-        Suggested name: "[Auto-detected name]"
-        Topics: [topic1, topic2, topic3]
-        
-        Would you like me to add it with these details?
 ```
 
 **Querying works:**
 ```
 User: What does my notebook say about [topic]?
 
-Claude: [Uses ask_notebook tool]
+Claude: [Uses notebook_query tool]
         According to your notebook:
         [Answer from NotebookLM with citations]
 ```
@@ -367,9 +350,8 @@ npm install -g notebooklm-mcp
 ```json
 {
   "mcpServers": {
-    "notebooklm": {
-      "command": "npx",
-      "args": ["-y", "notebooklm-mcp@latest"]
+    "notebooklm-rpc": {
+      "command": "notebooklm-mcp"
     }
   }
 }
@@ -377,7 +359,7 @@ npm install -g notebooklm-mcp
 
 ### First Use (in Claude Desktop)
 ```
-Add my notebook: https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069
+List my NotebookLM notebooks
 ```
 
 ### Query

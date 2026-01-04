@@ -57,15 +57,14 @@ notebooklm-claude-integration/
 ├── WHAT_TO_DO.md                     ← User setup guide
 ├── mcp-config/                       ← MCP server configurations
 │   ├── servers.json                  ← Single source of truth
-│   ├── install-desktop.sh            ← Deploy to Desktop
-│   ├── install-code.sh               ← Deploy to Code CLI
-│   └── update-all.sh                 ← Update both
-├── plugin/                           ← Claude Code plugin
+│   ├── servers.json                  ← MCP server definitions
+│   ├── env.example                   ← Environment variable template
+│   └── README.md                     ← Pixi-first install instructions
+├── plugins/                          ← Claude Code plugin
 │   └── notebooklm/                   ← Plugin implementation
-│       ├── run.py                    ← Command router
-│       ├── auth_manager.py           ← Authentication
-│       ├── notebook_manager.py       ← Library management
-│       └── ask_question.py           ← NotebookLM queries
+│       ├── commands/                 ← /nlm command definitions
+│       ├── agents/                   ← Research agent
+│       └── skills/                   ← notebooklm-patterns skill
 ├── docs/                             ← Documentation
 │   ├── ARCHITECTURE.md
 │   ├── API.md
@@ -96,7 +95,7 @@ notebooklm-claude-integration/
 
 Before uploading to GitHub, ensure:
 
-- [x] You ran `~/.mcp-unified/deploy.sh` successfully
+- [x] You ran `pixi run mcp-update-all` successfully
 - [x] GitHub MCP server is configured with your token
 - [x] Claude Code CLI can access GitHub tools
 

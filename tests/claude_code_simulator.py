@@ -1,207 +1,259 @@
-#!/usr/bin/env python3
-"""
-Claude Code Simulator - NotebookLM Plugin Demo
-Simulates Claude Code CLI with the NotebookLM plugin installed.
+"""Simulate the Claude Code CLI with the NotebookLM plugin installed.
+
+This script is used for manual testing of the plugin interface.
 """
 
-import sys
 import json
+import logging
 import subprocess
+import sys
 from pathlib import Path
 
 PLUGIN_DIR = Path.home() / ".claude" / "plugins" / "installed" / "notebooklm"
 SCRIPTS_DIR = PLUGIN_DIR / "skills" / "notebooklm" / "scripts"
 
+
 class Colors:
-    """ANSI color codes for terminal output"""
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    BOLD = '\033[1m'
-    RESET = '\033[0m'
+    """ANSI color codes for terminal output."""
 
-def print_header():
-    """Print Claude Code header"""
-    print(f"{Colors.BOLD}{Colors.BLUE}")
-    print("╔════════════════════════════════════════════════════════════╗")
-    print("║              Claude Code CLI v2.0.12                        ║")
-    print("║         NotebookLM Plugin Demo (SIMULATED)                  ║")
-    print("╚════════════════════════════════════════════════════════════╝")
-    print(f"{Colors.RESET}")
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    BOLD = "\033[1m"
+    RESET = "\033[0m"
 
-def execute_command(cmd: str, args: list):
-    """Execute a plugin command"""
-    script_path = SCRIPTS_DIR / "run.py"
-    
-    try:
-        result = subprocess.run(
-            [sys.executable, str(script_path), cmd] + args,
-            capture_output=True,
-            text=True,
-            timeout=10
+
+logger = logging.getLogger("claude_code_simulator")
+MIN_SUBCOMMAND_PARTS = 2
+
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+
+def _emit(message: str = "") -> None:
+    logger.info(message)
+
+
+def _handle_notebook_auth(parts: list[str]) -> None:
+    if len(parts) < MIN_SUBCOMMAND_PARTS:
+        _emit(
+            f"{Colors.RED}Usage: /notebook-auth <status|setup|reset>{Colors.RESET}",
         )
-        
-        data = json.loads(result.stdout)
-        return data
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
-
-def format_response(data: dict):
-    """Format the response for display"""
-    if not data.get("success"):
-        print(f"{Colors.RED}✗ Error: {data.get('error', 'Unknown error')}{Colors.RESET}")
         return
-    
-    print(f"{Colors.GREEN}✓ Success{Colors.RESET}")
-    print()
-    
-    # Handle different response types
+
+    subcmd = parts[1]
+    result = execute_command("auth", [subcmd])
+    format_response(result)
+
+
+def _handle_notebook(parts: list[str]) -> None:
+    if len(parts) < MIN_SUBCOMMAND_PARTS:
+        _emit(
+            f"{Colors.RED}Usage: /notebook <add|list|activate|ask> [args]{Colors.RESET}",
+        )
+        return
+
+    subcmd = parts[1]
+    args = parts[2].split() if len(parts) > MIN_SUBCOMMAND_PARTS else []
+
+    result = execute_command(subcmd, args)
+    format_response(result)
+
+
+def _handle_command(user_input: str) -> bool:
+    parts = user_input.split(maxsplit=2)
+    command = parts[0].lower()
+
+    if command == "/exit":
+        _emit(f"{Colors.YELLOW}Goodbye!{Colors.RESET}")
+        return False
+
+    if command == "/help":
+        show_help()
+        return True
+
+    if command == "/notebook-auth":
+        _handle_notebook_auth(parts)
+        return True
+
+    if command == "/notebook":
+        _handle_notebook(parts)
+        return True
+
+    _emit(f"{Colors.RED}Unknown command: {command}{Colors.RESET}")
+    _emit(f"Type {Colors.BLUE}/help{Colors.RESET} for available commands")
+    return True
+
+
+def print_header() -> None:
+    """Print the Claude Code header."""
+    _emit(f"{Colors.BOLD}{Colors.BLUE}")
+    _emit("╔════════════════════════════════════════════════════════════╗")
+    _emit("║              Claude Code CLI v2.0.12                        ║")
+    _emit("║         NotebookLM Plugin Demo (SIMULATED)                  ║")
+    _emit("╚════════════════════════════════════════════════════════════╝")
+    _emit(f"{Colors.RESET}")
+
+
+def execute_command(cmd: str, args: list[str]) -> dict:
+    """Execute a plugin command."""
+    script_path = SCRIPTS_DIR / "run.py"
+
+    try:
+        result = subprocess.run(  # noqa: S603
+            [sys.executable, str(script_path), cmd, *args],
+            capture_output=True,
+            check=False,  # CLI script returns JSON on stdout.
+            text=True,
+            timeout=10,
+        )
+        return json.loads(result.stdout)
+    except (json.JSONDecodeError, subprocess.TimeoutExpired, OSError) as exc:
+        return {"success": False, "error": str(exc)}
+
+
+def _format_notebook_list(data: dict) -> None:
+    _emit(f"{Colors.BOLD}Notebooks in library:{Colors.RESET}")
+    for notebook in data["notebooks"]:
+        active = "●" if notebook.get("active") else "○"
+        topics = ", ".join(notebook.get("topics", []))
+        _emit(f"  {active} {notebook['name']}")
+        _emit(f"    ID: {notebook['id'][:16]}...")
+        _emit(f"    Topics: {topics}")
+        _emit()
+
+
+def _format_answer(data: dict) -> None:
+    _emit(f"{Colors.BOLD}Question:{Colors.RESET}")
+    _emit(f"  {data['question']}")
+    _emit()
+    _emit(f"{Colors.BOLD}Answer from {data['notebook']['name']}:{Colors.RESET}")
+    _emit(f"{data['answer']}")
+    _emit()
+
+    citations = data.get("citations") or []
+    if citations:
+        _emit(f"{Colors.BOLD}Citations:{Colors.RESET}")
+        for cite in citations:
+            _emit(f"  • {cite['source']}")
+        _emit()
+
+    follow_ups = data.get("follow_up_questions") or []
+    if follow_ups:
+        _emit(f"{Colors.YELLOW}Suggested follow-ups:{Colors.RESET}")
+        for question in follow_ups:
+            _emit(f"  ? {question}")
+
+
+def _format_auth(data: dict) -> None:
+    if data["authenticated"]:
+        _emit(f"{Colors.GREEN}● Authenticated{Colors.RESET}")
+        if data.get("email"):
+            _emit(f"  Email: {data['email']}")
+        return
+    _emit(f"{Colors.YELLOW}○ Not authenticated{Colors.RESET}")
+    _emit(f"  {data.get('message', '')}")
+
+
+def _format_single_notebook(data: dict) -> None:
+    notebook = data["notebook"]
+    _emit(f"{Colors.BOLD}{notebook['name']}{Colors.RESET}")
+    _emit(f"  ID: {notebook['id']}")
+    _emit(f"  Description: {notebook.get('description', 'N/A')}")
+    _emit(f"  Topics: {', '.join(notebook.get('topics', []))}")
+    _emit(f"  Sources: {notebook.get('sources_count', 'N/A')}")
+
+
+def format_response(data: dict) -> None:
+    """Format the response for display."""
+    if not data.get("success"):
+        _emit(f"{Colors.RED}✗ Error: {data.get('error', 'Unknown error')}{Colors.RESET}")
+        return
+
+    _emit(f"{Colors.GREEN}✓ Success{Colors.RESET}")
+    _emit()
+
     if "notebooks" in data:
-        # List response
-        print(f"{Colors.BOLD}Notebooks in library:{Colors.RESET}")
-        for nb in data["notebooks"]:
-            active = "●" if nb.get("active") else "○"
-            print(f"  {active} {nb['name']}")
-            print(f"    ID: {nb['id'][:16]}...")
-            print(f"    Topics: {', '.join(nb['topics'])}")
-            print()
-    
+        _format_notebook_list(data)
     elif "answer" in data:
-        # Question response
-        print(f"{Colors.BOLD}Question:{Colors.RESET}")
-        print(f"  {data['question']}")
-        print()
-        print(f"{Colors.BOLD}Answer from {data['notebook']['name']}:{Colors.RESET}")
-        print(f"{data['answer']}")
-        print()
-        
-        if data.get("citations"):
-            print(f"{Colors.BOLD}Citations:{Colors.RESET}")
-            for cite in data["citations"]:
-                print(f"  • {cite['source']}")
-        print()
-        
-        if data.get("follow_up_questions"):
-            print(f"{Colors.YELLOW}Suggested follow-ups:{Colors.RESET}")
-            for q in data["follow_up_questions"]:
-                print(f"  ? {q}")
-    
+        _format_answer(data)
     elif "authenticated" in data:
-        # Auth response
-        if data["authenticated"]:
-            print(f"{Colors.GREEN}● Authenticated{Colors.RESET}")
-            if data.get("email"):
-                print(f"  Email: {data['email']}")
-        else:
-            print(f"{Colors.YELLOW}○ Not authenticated{Colors.RESET}")
-            print(f"  {data.get('message', '')}")
-    
+        _format_auth(data)
     elif "notebook" in data:
-        # Single notebook response
-        nb = data["notebook"]
-        print(f"{Colors.BOLD}{nb['name']}{Colors.RESET}")
-        print(f"  ID: {nb['id']}")
-        print(f"  Description: {nb.get('description', 'N/A')}")
-        print(f"  Topics: {', '.join(nb.get('topics', []))}")
-        print(f"  Sources: {nb.get('sources_count', 'N/A')}")
-    
+        _format_single_notebook(data)
     else:
-        # Generic response
-        print(json.dumps(data, indent=2))
+        _emit(json.dumps(data, indent=2))
 
-def show_help():
-    """Show available commands"""
-    print(f"{Colors.BOLD}Available Commands:{Colors.RESET}")
-    print()
-    print(f"  {Colors.BLUE}/notebook-auth status{Colors.RESET}")
-    print(f"    Check authentication status")
-    print()
-    print(f"  {Colors.BLUE}/notebook-auth setup{Colors.RESET}")
-    print(f"    Setup authentication (opens Chrome for Google login)")
-    print()
-    print(f"  {Colors.BLUE}/notebook add <url>{Colors.RESET}")
-    print(f"    Add a notebook to your library")
-    print()
-    print(f"  {Colors.BLUE}/notebook list{Colors.RESET}")
-    print(f"    List all notebooks in your library")
-    print()
-    print(f"  {Colors.BLUE}/notebook activate <name>{Colors.RESET}")
-    print(f"    Activate a specific notebook")
-    print()
-    print(f"  {Colors.BLUE}/notebook ask \"<question>\"{Colors.RESET}")
-    print(f"    Ask a question to the active notebook")
-    print()
-    print(f"  {Colors.BLUE}/help{Colors.RESET}")
-    print(f"    Show this help message")
-    print()
-    print(f"  {Colors.BLUE}/exit{Colors.RESET}")
-    print(f"    Exit Claude Code")
-    print()
 
-def main():
-    """Main REPL loop"""
+def show_help() -> None:
+    """Show available commands."""
+    _emit(f"{Colors.BOLD}Available Commands:{Colors.RESET}")
+    _emit()
+    _emit(f"  {Colors.BLUE}/notebook-auth status{Colors.RESET}")
+    _emit("    Check authentication status")
+    _emit()
+    _emit(f"  {Colors.BLUE}/notebook-auth setup{Colors.RESET}")
+    _emit("    Setup authentication (opens Chrome for Google login)")
+    _emit()
+    _emit(f"  {Colors.BLUE}/notebook add <url>{Colors.RESET}")
+    _emit("    Add a notebook to your library")
+    _emit()
+    _emit(f"  {Colors.BLUE}/notebook list{Colors.RESET}")
+    _emit("    List all notebooks in your library")
+    _emit()
+    _emit(f"  {Colors.BLUE}/notebook activate <name>{Colors.RESET}")
+    _emit("    Activate a specific notebook")
+    _emit()
+    _emit(f'  {Colors.BLUE}/notebook ask "<question>"{Colors.RESET}')
+    _emit("    Ask a question to the active notebook")
+    _emit()
+    _emit(f"  {Colors.BLUE}/help{Colors.RESET}")
+    _emit("    Show this help message")
+    _emit()
+    _emit(f"  {Colors.BLUE}/exit{Colors.RESET}")
+    _emit("    Exit Claude Code")
+    _emit()
+
+
+def main() -> None:
+    """Run the main REPL loop."""
+    _configure_logging()
     print_header()
-    print(f"{Colors.YELLOW}NOTE: This is a SIMULATED environment.{Colors.RESET}")
-    print(f"{Colors.YELLOW}Real Claude Code requires installation and API keys.{Colors.RESET}")
-    print(f"{Colors.YELLOW}Browser automation is mocked (requires Chrome + network).{Colors.RESET}")
-    print()
-    print("Type /help for available commands")
-    print()
-    
+    _emit(f"{Colors.YELLOW}NOTE: This is a SIMULATED environment.{Colors.RESET}")
+    _emit(f"{Colors.YELLOW}Real Claude Code requires installation and API keys.{Colors.RESET}")
+    _emit(
+        f"{Colors.YELLOW}Browser automation is mocked (requires Chrome + network).{Colors.RESET}",
+    )
+    _emit()
+    _emit("Type /help for available commands")
+    _emit()
+
     while True:
         try:
             # Prompt
             user_input = input(f"{Colors.BOLD}claude> {Colors.RESET}").strip()
-            
+
             if not user_input:
                 continue
-            
+
             # Parse command
-            parts = user_input.split(maxsplit=2)
-            command = parts[0].lower()
-            
-            if command == "/exit":
-                print(f"{Colors.YELLOW}Goodbye!{Colors.RESET}")
+            should_continue = _handle_command(user_input)
+            if not should_continue:
                 break
-            
-            elif command == "/help":
-                show_help()
-            
-            elif command == "/notebook-auth":
-                if len(parts) < 2:
-                    print(f"{Colors.RED}Usage: /notebook-auth <status|setup|reset>{Colors.RESET}")
-                    continue
-                
-                subcmd = parts[1]
-                result = execute_command("auth", [subcmd])
-                format_response(result)
-            
-            elif command == "/notebook":
-                if len(parts) < 2:
-                    print(f"{Colors.RED}Usage: /notebook <add|list|activate|ask> [args]{Colors.RESET}")
-                    continue
-                
-                subcmd = parts[1]
-                args = parts[2].split() if len(parts) > 2 else []
-                
-                result = execute_command(subcmd, args)
-                format_response(result)
-            
-            else:
-                print(f"{Colors.RED}Unknown command: {command}{Colors.RESET}")
-                print(f"Type {Colors.BLUE}/help{Colors.RESET} for available commands")
-            
-            print()
-        
+            _emit()
+
         except KeyboardInterrupt:
-            print(f"\n{Colors.YELLOW}Use /exit to quit{Colors.RESET}")
+            _emit(f"\n{Colors.YELLOW}Use /exit to quit{Colors.RESET}")
         except EOFError:
-            print(f"\n{Colors.YELLOW}Goodbye!{Colors.RESET}")
+            _emit(f"\n{Colors.YELLOW}Goodbye!{Colors.RESET}")
             break
+
 
 if __name__ == "__main__":
     main()

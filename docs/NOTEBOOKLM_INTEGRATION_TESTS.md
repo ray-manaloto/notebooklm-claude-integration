@@ -7,7 +7,7 @@ These tests run the real NotebookLM flows using your local Chrome authentication
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Summarize the key sources in this notebook." \
-tests/notebooklm-integration.sh
+pixi run notebooklm-integration
 ```
 
 Pixi task:
@@ -19,9 +19,9 @@ pixi run codex-ask-all
 
 ## What It Does
 
-- Checks auth status and triggers `setup_auth` with a visible Chrome window if needed (fails fast if auth still does not resolve).
+- Ensures RPC auth is available (fail fast if cookies are missing).
 - Filters to the requested notebook IDs.
-- Runs `ask_question` with retry and off-topic guardrails.
+- Runs `notebook_query` with retry and off-topic guardrails.
 
 ## Guardrails
 
@@ -31,8 +31,6 @@ pixi run codex-ask-all
 
 ## Notes
 
-- Requires a local Chrome login for NotebookLM.
-- Uses `NOTEBOOKLM_PROFILE` if provided.
-- The alternate `notebooklm-rpc` server uses `notebooklm-mcp-auth` and different tool names; these scripts target the `notebooklm` server.
-- Use `scripts/notebooklm-auth-rpc.sh` to bootstrap the RPC auth flow if needed.
+- Requires a local Chrome login for NotebookLM (via notebooklm-mcp-auth).
+- Use `pixi run notebooklm-auth-rpc` to bootstrap the RPC auth flow if needed.
 - You can set the default account for RPC auth via `GOOGLE_ACCOUNT=your@email`.

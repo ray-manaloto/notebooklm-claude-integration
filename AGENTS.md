@@ -5,7 +5,7 @@
 - `plugins/notebooklm/`: Claude Code plugin assets, skills, and commands.
 - `mcp-config/`: MCP server config templates and install scripts.
 - `docs/`: Setup guides and troubleshooting references.
-- `tests/`: Simulation tooling (`run_simulation.py`, `demo.sh`) used to validate user flows.
+- `tests/`: Simulation tooling (`run_simulation.py`) used to validate user flows.
 
 ## Build, Test, and Development Commands
 Run commands from the relevant subdirectory.

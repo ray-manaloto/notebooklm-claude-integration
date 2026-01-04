@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+  ".pixi",
+  "auth-layer",
+  "node_modules",
+]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint]
+# Modern strict profile: run all checks (no ignores).
+select = ["ALL"]

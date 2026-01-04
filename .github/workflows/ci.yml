@@ -6,6 +6,22 @@ on:
   pull_request:
 
 jobs:
+  pixi-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.8
+        with:
+          cache: true
+      - name: Sync env
+        run: pixi run pixi-sync
+      - name: Run hooks
+        run: pixi run hooks-run
+      - name: Ruff check
+        run: pixi run ruff-check
+      - name: Ruff format check
+        run: pixi run ruff-format-check
+
   auth-layer:
     runs-on: ubuntu-latest
     defaults:
@@ -31,18 +47,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: prefix-dev/setup-pixi@v0.8.8
         with:
-          python-version: '3.11'
+          cache: true
+      - name: Sync env
+        run: pixi run pixi-sync
       - name: Run simulation
-        run: python3 tests/run_simulation.py
-
-  scripts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Bash syntax check
-        run: |
-          for script in scripts/*.sh; do
-            bash -n "$script"
-          done
+        run: pixi run simulation

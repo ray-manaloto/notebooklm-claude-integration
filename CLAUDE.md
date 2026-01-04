@@ -30,9 +30,8 @@ notebooklm-claude-integration/
 │
 ├── mcp-config/                      # MCP configuration utilities
 │   ├── servers.json                 # Unified MCP server config
-│   ├── install-desktop.sh           # Deploy to Claude Desktop
-│   ├── install-code.sh              # Deploy to Claude Code
-│   └── update-all.sh                # Update both environments
+│   ├── env.example                  # Environment variable template
+│   └── README.md                    # Pixi-first install instructions
 │
 ├── docs/                            # Documentation
 │   ├── CLAUDE_DESKTOP_SETUP.md
@@ -51,13 +50,10 @@ The plugin provides a single `/nlm` command with subcommands:
 
 | Command | Description |
 |---------|-------------|
-| `/nlm ask <question>` | Ask a question to the active notebook |
-| `/nlm add <url>` | Add a notebook to your library (auto-selects as active) |
-| `/nlm list` | List all notebooks in your library |
-| `/nlm select <name>` | Set active notebook for queries |
-| `/nlm auth` | Check authentication status |
-| `/nlm auth setup` | First-time authentication (opens browser) |
-| `/nlm auth reset` | Clear and re-authenticate |
+| `/nlm ask <question>` | Ask a question to a notebook by ID |
+| `/nlm list` | List all notebooks |
+| `/nlm create <name>` | Create a new notebook |
+| `/nlm auth rpc` | Save RPC auth cookies |
 
 ## MCP Tools Reference
 
@@ -65,15 +61,29 @@ The plugin uses these NotebookLM MCP tools:
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__notebooklm__ask_question` | Query a notebook |
-| `mcp__notebooklm__add_notebook` | Add notebook to library |
-| `mcp__notebooklm__list_notebooks` | List all notebooks |
-| `mcp__notebooklm__select_notebook` | Set active notebook |
-| `mcp__notebooklm__get_notebook` | Get notebook details |
-| `mcp__notebooklm__search_notebooks` | Search by query |
-| `mcp__notebooklm__get_health` | Check auth status |
-| `mcp__notebooklm__setup_auth` | Initial authentication |
-| `mcp__notebooklm__re_auth` | Reset authentication |
+| `mcp__notebooklm-rpc__save_auth_tokens` | Persist auth cookies |
+| `mcp__notebooklm-rpc__notebook_list` | List all notebooks |
+| `mcp__notebooklm-rpc__notebook_create` | Create a new notebook |
+| `mcp__notebooklm-rpc__notebook_get` | Get notebook details |
+| `mcp__notebooklm-rpc__notebook_describe` | Summarize notebook content |
+| `mcp__notebooklm-rpc__notebook_query` | Ask a question |
+| `mcp__notebooklm-rpc__notebook_add_url` | Add URL/YouTube source |
+| `mcp__notebooklm-rpc__notebook_add_text` | Add text source |
+| `mcp__notebooklm-rpc__notebook_add_drive` | Add Drive source |
+| `mcp__notebooklm-rpc__source_list_drive` | List Drive sources w/ freshness |
+| `mcp__notebooklm-rpc__source_sync_drive` | Sync stale Drive sources |
+| `mcp__notebooklm-rpc__source_delete` | Delete a source |
+| `mcp__notebooklm-rpc__source_describe` | Summarize a source |
+| `mcp__notebooklm-rpc__research_start` | Start research |
+| `mcp__notebooklm-rpc__research_status` | Poll research progress |
+| `mcp__notebooklm-rpc__research_import` | Import research sources |
+| `mcp__notebooklm-rpc__chat_configure` | Configure chat behavior |
+| `mcp__notebooklm-rpc__audio_overview_create` | Generate audio overview |
+| `mcp__notebooklm-rpc__video_overview_create` | Generate video overview |
+| `mcp__notebooklm-rpc__infographic_create` | Generate infographic |
+| `mcp__notebooklm-rpc__slide_deck_create` | Generate slide deck |
+| `mcp__notebooklm-rpc__studio_status` | Check studio job status |
+| `mcp__notebooklm-rpc__studio_delete` | Delete studio artifacts |
 
 ## Plugin Installation
 
@@ -84,9 +94,10 @@ The plugin uses these NotebookLM MCP tools:
    npm install -g @anthropic-ai/claude-code
    ```
 
-2. **NotebookLM MCP Server** - Required for browser automation:
+2. **NotebookLM MCP Server (RPC)** - Required for full feature parity:
    ```bash
-   claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+   uv tool install notebooklm-mcp-server
+   claude mcp add --scope user notebooklm-rpc notebooklm-mcp
    ```
 
 3. **Google Chrome** - Required for Playwright automation
@@ -110,7 +121,7 @@ claude plugin install notebooklm@notebooklm-plugin --scope project
 claude
 
 # 4. First-time authentication
-/nlm auth setup
+/nlm auth rpc
 ```
 
 #### Method 2: From Local Clone (For Development)
@@ -132,7 +143,7 @@ claude plugin install notebooklm@notebooklm-plugin --scope project
 claude
 
 # 5. First-time authentication
-/nlm auth setup
+/nlm auth rpc
 ```
 
 ### Verifying Installation
@@ -177,11 +188,11 @@ claude plugin marketplace remove notebooklm-plugin
                                │                        │
                                v                        v
                         ┌──────────────┐         ┌─────────────┐
-                        │ MCP Tools    │         │  Playwright │
-                        │ - ask_question│        │   Browser   │
-                        │ - add_notebook│        └─────────────┘
-                        │ - list_notebooks│             │
-                        │ - select_notebook│            v
+                        │ MCP Tools    │         │ Auth Helper │
+                        │ - notebook_list│       │ (cookies)   │
+                        │ - notebook_query│      └─────────────┘
+                        │ - notebook_add_url│            │
+                        │ - studio_status│               v
                         └──────────────┘         ┌─────────────┐
                                                  │ NotebookLM  │
                                                  │   (Gemini)  │
@@ -189,10 +200,9 @@ claude plugin marketplace remove notebooklm-plugin
 ```
 
 The plugin uses MCP tools to communicate with the NotebookLM MCP server, which handles:
-- Browser automation via Playwright
-- Google authentication
-- Session management
-- Notebook library storage
+- Cookie-based authentication
+- Notebook and source management
+- Research and Studio artifact generation
 
 ## Research Agent
 
@@ -244,10 +254,11 @@ If you see errors about missing MCP tools:
 ```bash
 # 1. Verify MCP server is configured
 claude mcp list
-# Should show: notebooklm
+# Should show: notebooklm-rpc
 
 # 2. If missing, add the MCP server
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # 3. Restart Claude Code
 claude
@@ -256,23 +267,23 @@ claude
 ### Not Authenticated
 
 ```bash
-# Check authentication status
-/nlm auth
+# Save RPC auth cookies
+/nlm auth rpc
 
-# Setup authentication (opens browser)
-/nlm auth setup
+# Run notebooklm-mcp-auth to refresh cookies if needed
+notebooklm-mcp-auth
 ```
 
 ### Rate Limited (50 queries/day free tier)
 - Wait for daily reset (midnight UTC), or
-- Use `/nlm auth reset` to switch Google accounts
+- Re-run `notebooklm-mcp-auth` with a different Google account
 - Consider Google AI Pro/Ultra for 5x limits
 
 ### Wrong Notebook Being Queried
 
 ```bash
-/nlm list           # See all notebooks with [ACTIVE] marker
-/nlm select <name>  # Switch to correct one
+/nlm list           # See all notebooks and IDs
+# Re-run /nlm ask with the correct notebook_id
 ```
 
 ### Common Installation Mistakes

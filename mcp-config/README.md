@@ -5,10 +5,8 @@ This directory contains a centralized approach to managing MCP servers for both 
 ## 📁 Files
 
 - **servers.json** - Single source of truth for all MCP server definitions
-- **install-desktop.sh** - Deploy to Claude Desktop
-- **install-code.sh** - Deploy to Claude Code CLI
-- **update-all.sh** - Update both environments at once
 - **env.example** - Template for environment variables
+- **README.md** - Pixi-first install instructions
 
 ## 🚀 Quick Start
 
@@ -32,11 +30,11 @@ source ~/.zshrc
 
 ```bash
 # Install to both Claude Desktop and Claude Code
-./update-all.sh
+pixi run mcp-update-all
 
 # Or install individually:
-./install-desktop.sh
-./install-code.sh
+pixi run mcp-install-desktop
+pixi run mcp-install-code
 ```
 
 ### 3. Verify Installation
@@ -72,19 +70,19 @@ Edit `servers.json`:
 Then update both environments:
 
 ```bash
-./update-all.sh
+pixi run mcp-update-all
 ```
 
 ### Remove a Server
 
 1. Remove from `servers.json`
-2. Run `./update-all.sh`
+2. Run `pixi run mcp-update-all`
 3. For Claude Code only: `claude mcp remove server-name`
 
 ### Update a Server
 
 1. Edit the server definition in `servers.json`
-2. Run `./update-all.sh`
+2. Run `pixi run mcp-update-all`
 
 ## 🔧 Customization
 
@@ -107,7 +105,6 @@ Edit `servers.json` to customize:
 
 | Server | Purpose | Requires |
 |--------|---------|----------|
-| **notebooklm** | Query NotebookLM notebooks | - |
 | **notebooklm-rpc** | NotebookLM MCP (HTTP/RPC) with expanded tools | `notebooklm-mcp` binary installed + `notebooklm-mcp-auth` cookies |
 | **github** | GitHub repo/PR/issue management | GITHUB_TOKEN |
 | **brave-search** | Web search via Brave API | BRAVE_API_KEY |
@@ -189,7 +186,7 @@ Edit `servers.json` to customize:
 ```
 Edit servers.json
         ↓
-./update-all.sh
+pixi run mcp-update-all
         ↓
     ┌───┴───┐
     ↓       ↓

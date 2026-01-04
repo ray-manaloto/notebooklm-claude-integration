@@ -113,7 +113,7 @@ echo $GITHUB_TOKEN  # Should show your token
 cd notebooklm-claude-integration/mcp-config
 
 # Install to both Claude Desktop and Claude Code
-./update-all.sh
+pixi run mcp-update-all
 ```
 
 ### 4.3: Verify Installation
@@ -153,7 +153,7 @@ source ~/.zshrc
 
 # Update MCP servers
 cd ~/notebooklm-claude-integration/mcp-config
-./update-all.sh
+pixi run mcp-update-all
 ```
 
 ### Add Brave Search (Optional)
@@ -166,7 +166,7 @@ export BRAVE_API_KEY="BSA_your_key_here"
 
 # Reload and update
 source ~/.zshrc
-./update-all.sh
+pixi run mcp-update-all
 ```
 
 ### Customize Filesystem Path
@@ -178,7 +178,7 @@ Edit `mcp-config/servers.json`:
 }
 ```
 
-Then run `./update-all.sh`
+Then run `pixi run mcp-update-all`
 
 ---
 
@@ -188,7 +188,7 @@ Then run `./update-all.sh`
 - [ ] Files downloaded/copied to your machine
 - [ ] Pushed to GitHub
 - [ ] Environment variables set in ~/.mcp-env
-- [ ] MCP servers installed via ./update-all.sh
+- [ ] MCP servers installed via pixi run mcp-update-all
 - [ ] Claude Desktop shows MCP indicator
 - [ ] Claude Code lists servers: `claude mcp list`
 - [ ] Tested in both environments

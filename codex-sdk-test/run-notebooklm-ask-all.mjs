@@ -11,7 +11,7 @@ const prompt = [
   `Each subagent should ask this question via notebook_id: '${question}'.`,
   "If subagents are unavailable, run the notebook queries sequentially.",
   "Aggregate responses labeled by notebook name and include citations.",
-  "If any ask_question times out, retry once with browser_options timeout_ms=60000.",
+  "If any notebook_query times out, retry once. If it still times out, record a timeout for that notebook and continue.",
 ].join(" ");
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));

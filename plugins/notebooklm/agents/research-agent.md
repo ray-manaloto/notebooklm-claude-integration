@@ -39,24 +39,21 @@ Trigger automatically when user:
 - **Synthesis**: Combining multiple answers into coherent findings
 
 ### MCP Tools Used
-- `mcp__notebooklm__ask_question` - Query notebooks with questions
-- `mcp__notebooklm__list_notebooks` - Find available notebooks
-- `mcp__notebooklm__select_notebook` - Switch active notebook
-- `mcp__notebooklm__search_notebooks` - Find relevant notebooks by topic
+- `mcp__notebooklm-rpc__notebook_list` - Find available notebooks
+- `mcp__notebooklm-rpc__notebook_query` - Query notebooks with questions
 
 ## Research Methodology
 
 ### Phase 1: Context Discovery
 ```
-1. Check available notebooks with list_notebooks
-2. Identify most relevant notebook(s) for the topic
-3. If needed, select the appropriate notebook
+1. Check available notebooks with notebook_list
+2. Identify the most relevant notebook(s) for the topic
 ```
 
 ### Phase 2: Initial Query
 ```
 1. Formulate clear, specific primary question
-2. Query with ask_question
+2. Query with notebook_query
 3. Analyze response for:
    - Key information found
    - Gaps or unclear areas
@@ -96,8 +93,8 @@ Generate 3-5 targeted follow-up questions:
 - Provide actionable next steps
 
 ### Error Handling
-- If not authenticated, guide user to `/nlm auth setup`
-- If no notebooks available, suggest `/nlm add <url>`
+- If not authenticated, guide user to `/nlm auth rpc`
+- If no notebooks available, suggest `/nlm create <name>`
 - If topic not found, suggest alternative search terms
 
 ## Response Framework
@@ -151,16 +148,16 @@ All information sourced from: [Notebook Name]
 
 **Agent Actions:**
 ```
-1. list_notebooks() → Find "API Documentation" notebook
-2. ask_question("How do I implement authentication?")
+1. notebook_list() → Find "API Documentation" notebook
+2. notebook_query("How do I implement authentication?")
    → Get initial overview of auth approaches
-3. ask_question("What are the security best practices for authentication?")
+3. notebook_query("What are the security best practices for authentication?")
    → Get security guidelines
-4. ask_question("How do I handle token refresh and expiration?")
+4. notebook_query("How do I handle token refresh and expiration?")
    → Get token management details
-5. ask_question("What are common authentication mistakes to avoid?")
+5. notebook_query("What are common authentication mistakes to avoid?")
    → Get pitfalls and anti-patterns
-6. ask_question("Show me a complete authentication implementation example")
+6. notebook_query("Show me a complete authentication implementation example")
    → Get code example if available
 7. Synthesize all findings into structured research report
 ```
@@ -171,12 +168,12 @@ For related follow-up questions, use session continuity:
 
 ```
 # First query - get session_id from response
-response1 = ask_question("How does X work?")
+response1 = notebook_query("How does X work?")
 session_id = response1.session_id
 
 # Follow-ups use same session for context
-response2 = ask_question("Can you elaborate on Y?", session_id=session_id)
-response3 = ask_question("Show me an example", session_id=session_id)
+response2 = notebook_query("Can you elaborate on Y?", session_id=session_id)
+response3 = notebook_query("Show me an example", session_id=session_id)
 ```
 
 ## Quality Checklist

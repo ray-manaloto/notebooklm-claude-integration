@@ -8,11 +8,8 @@ A **production-ready solution** for managing MCP servers across both Claude Desk
 
 ### Core Configuration
 1. **mcp-config/servers.json** - Single source where you define all MCP servers
-2. **mcp-config/install-desktop.sh** - Deploys to Claude Desktop
-3. **mcp-config/install-code.sh** - Deploys to Claude Code
-4. **mcp-config/update-all.sh** - Updates both environments at once
-5. **mcp-config/env.example** - Template for environment variables
-6. **mcp-config/README.md** - Usage instructions
+2. **mcp-config/env.example** - Template for environment variables
+3. **mcp-config/README.md** - Usage instructions (Pixi-first)
 
 ### Documentation
 7. **MCP_CONFIG_BEST_PRACTICES.md** - Comprehensive 2024/2025 best practices guide
@@ -27,7 +24,7 @@ A **production-ready solution** for managing MCP servers across both Claude Desk
 
 ```
 1. Define servers once:     mcp-config/servers.json
-2. Deploy to both:          ./update-all.sh
+2. Deploy to both:          pixi run mcp-update-all
 3. Environment variables:   ~/.mcp-env
 ```
 
@@ -43,7 +40,7 @@ source ~/.zshrc
 
 # 2. Install to both environments
 cd mcp-config
-./update-all.sh
+pixi run mcp-update-all
 
 # 3. Verify
 claude mcp list              # For Code
@@ -56,14 +53,14 @@ claude mcp list              # For Code
 nano mcp-config/servers.json
 
 # Update both environments
-./update-all.sh
+pixi run mcp-update-all
 ```
 
 ## 📊 Included MCP Servers
 
 | Server | Purpose | Auth Required |
 |--------|---------|---------------|
-| notebooklm | Query your NotebookLM notebooks | No |
+| notebooklm-rpc | Query your NotebookLM notebooks | `notebooklm-mcp` + cookies |
 | github | GitHub repos, PRs, issues | GITHUB_TOKEN |
 | brave-search | Web search | BRAVE_API_KEY |
 | context7 | Up-to-date library docs | No |
@@ -74,7 +71,7 @@ nano mcp-config/servers.json
 1. **Single Source of Truth** - Edit once, deploy everywhere
 2. **Version Control Safe** - No secrets in git
 3. **Team Friendly** - Share servers.json with team
-4. **Automated** - Scripts handle all deployment
+4. **Automated** - Pixi tasks handle all deployment
 5. **Backup** - Auto-backup before updates
 6. **Secure** - Environment variables for credentials
 
@@ -95,9 +92,6 @@ The solution implements these 2024/2025 best practices:
 notebooklm-claude-integration/
 ├── mcp-config/
 │   ├── servers.json          ← Define servers here
-│   ├── install-desktop.sh    ← Deploy to Desktop
-│   ├── install-code.sh       ← Deploy to Code
-│   ├── update-all.sh         ← Update both
 │   ├── env.example           ← Credential template
 │   └── README.md             ← Usage guide
 │
@@ -108,7 +102,7 @@ notebooklm-claude-integration/
 ## 🔄 Workflow
 
 ```
-Edit servers.json → Run ./update-all.sh → Both environments updated
+Edit servers.json → Run pixi run mcp-update-all → Both environments updated
 ```
 
 ## 📚 Documentation
@@ -121,7 +115,7 @@ Edit servers.json → Run ./update-all.sh → Both environments updated
 
 1. Customize `servers.json` for your needs
 2. Set up environment variables
-3. Run `./update-all.sh`
+3. Run `pixi run mcp-update-all`
 4. Commit to your GitHub repo!
 
 ---

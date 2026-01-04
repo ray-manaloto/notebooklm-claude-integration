@@ -18,11 +18,16 @@ Both allow you to query your NotebookLM notebooks directly from Claude, getting 
 Project plan lives at `docs/PROJECT_PLAN.md` with topic-specific items under `docs/plans/`.
 CI details live at `docs/CI.md`.
 
+Keep Pixi dependencies current (updates the lockfile, then installs from it):
+```bash
+pixi run pixi-sync
+```
+
 NotebookLM end-to-end integration (uses your local Chrome auth):
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Summarize the key sources in this notebook." \
-tests/notebooklm-integration.sh
+pixi run notebooklm-integration
 ```
 
 ### AI Agent Step-by-Step (Codex CLI)
@@ -31,15 +36,16 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
 
 1. Install and enable the MCP server:
    ```bash
-   codex mcp add notebooklm -- npx -y notebooklm-mcp@latest
+   uv tool install notebooklm-mcp-server
+   codex mcp add notebooklm-rpc notebooklm-mcp
    ```
-2. Authenticate once (browser login). The auth layer will persist cookies. The scripts will open Chrome when auth is missing and stop if auth still fails:
+2. Authenticate once (browser login) and persist cookies:
    ```bash
-   codex --enable skills exec "Use the notebooklm-patterns skill. Check auth with mcp__notebooklm__get_health. If not authenticated, run mcp__notebooklm__setup_auth with show_browser=true, then re-check."
+   pixi run notebooklm-auth-rpc
    ```
 3. Run the full E2E test (downloads the skill from GitHub into a temp repo and queries a notebook):
    ```bash
-   make codex-skill-e2e
+   pixi run codex-skill-e2e
    ```
 4. Optional overrides:
    ```bash
@@ -47,7 +53,7 @@ Use this sequence when an agent needs to verify the NotebookLM integration end-t
    NOTEBOOK_NAME="My Test Notebook" \
    NOTEBOOK_DESC="Notebook for testing Codex + NotebookLM." \
    NOTEBOOK_ID="my-test-notebook" \
-   make codex-skill-e2e
+   pixi run codex-skill-e2e
    ```
 
 ### AI Agent Step-by-Step (Codex SDK)
@@ -80,7 +86,7 @@ Use this sequence when a Codex SDK agent must validate the setup and produce a c
      "List all notebooks, then ask each notebook (via notebook_id) this question:",
      "'How can we improve the Codex implementation in this repo?'.",
      "Aggregate responses labeled by notebook name and include citations.",
-     "If any ask_question times out, retry once with browser_options timeout_ms=60000.",
+    "If any notebook_query times out, retry once. If it still times out, record a timeout for that notebook and continue.",
    ].join(" ");
 
    const codex = new Codex();
@@ -109,7 +115,8 @@ Use this sequence when a Codex SDK agent must validate the setup and produce a c
 
 ```bash
 # 1. Ensure NotebookLM MCP server is configured
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # 2. Add the plugin marketplace from GitHub
 claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
@@ -122,8 +129,8 @@ claude plugin marketplace list  # Should show: notebooklm-plugin
 claude plugin list              # Should show: notebooklm
 
 # 5. Restart Claude Code, then:
-/nlm auth setup                    # First-time authentication
-/nlm add <notebooklm-url>          # Add a notebook
+/nlm auth rpc                      # First-time authentication
+/nlm list                          # List notebooks
 /nlm ask "Your question"           # Query the notebook
 ```
 
@@ -145,7 +152,7 @@ This repo also supports the HTTP/RPC-based MCP server from `jacob-bd/notebooklm-
 Install + auth:
 ```bash
 uv tool install notebooklm-mcp-server
-GOOGLE_ACCOUNT=ray.manaloto@gmail.com scripts/notebooklm-auth-rpc.sh
+GOOGLE_ACCOUNT=ray.manaloto@gmail.com pixi run notebooklm-auth-rpc
 ```
 
 Pixi task (recommended for repeatable runs):
@@ -163,35 +170,32 @@ codex mcp add notebooklm-rpc -- notebooklm-mcp
 ```
 
 Notes:
-- This server uses cookie extraction instead of `setup_auth`.
-- Tool names differ (e.g., `notebook_list`, `notebook_query`, `source_sync_drive`).
-- Use `notebooklm-patterns` skill guidance for the alternate toolset.
+- This server uses cookie extraction; persist cookies with `save_auth_tokens`.
+- Tool names include `notebook_list`, `notebook_query`, and `source_sync_drive`.
+- Use `notebooklm-patterns` for RPC-first guidance.
 - Override the account used for cookie extraction with `GOOGLE_ACCOUNT=your@email`.
 
-### Recommended “Best of Both” (RPC-first)
+### Recommended Setup (RPC-first)
 
-Keep both servers configured, but treat `notebooklm-rpc` as the default when available:
-- `notebooklm-rpc` (expanded toolset, faster queries)
-- `notebooklm` (Playwright auth, stable ask/list fallback)
+Use `notebooklm-rpc` as the default server for full feature parity:
+- `notebooklm-rpc` (expanded toolset, Drive sync, Studio artifacts)
 
-If `setup_auth` fails or you need Drive sync/Studio tools, run `scripts/notebooklm-auth-rpc.sh` and use the RPC server.
+If auth fails, re-run `pixi run notebooklm-auth-rpc` and retry.
 
 ## When to Use This Repo vs. jacob-bd Only
 
 You can use `jacob-bd/notebooklm-mcp` directly if you only need the RPC server tools.
 This repo adds:
 - Codex/Claude CLI wiring (`/nlm` commands, skills, tool routing).
-- Hybrid auth with fallbacks (Playwright + cookie extraction).
-- Repeatable scripts and Pixi tasks for validation and multi-notebook queries.
+- Repeatable Pixi tasks for validation and multi-notebook queries.
 - Centralized MCP configuration and agent playbooks.
 
 Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "notebooklm": {
-      "command": "npx",
-      "args": ["-y", "notebooklm-mcp@latest"]
+    "notebooklm-rpc": {
+      "command": "notebooklm-mcp"
     }
   }
 }
@@ -234,9 +238,8 @@ notebooklm-claude-integration/
 │
 ├── mcp-config/                      # MCP configuration utilities
 │   ├── servers.json                 # Unified MCP server config
-│   ├── install-desktop.sh           # Deploy to Claude Desktop
-│   ├── install-code.sh              # Deploy to Claude Code
-│   └── update-all.sh                # Update both environments
+│   ├── env.example                  # Environment variable template
+│   └── README.md                    # Pixi-first install instructions
 │
 ├── docs/                            # Documentation
 │   ├── CLAUDE_DESKTOP_SETUP.md
@@ -251,16 +254,16 @@ notebooklm-claude-integration/
 
 ## Codex Skill E2E Test
 
-Use this script to download the skill from GitHub into a temp repo, load it, and run an end-to-end NotebookLM query through Codex CLI.
+Use the Pixi task to download the skill from GitHub into a temp repo, load it, and run an end-to-end NotebookLM query through Codex CLI.
 
 Prereqs:
 - `codex` CLI installed
-- NotebookLM MCP server added: `codex mcp add notebooklm -- npx -y notebooklm-mcp@latest`
+- NotebookLM MCP server added: `codex mcp add notebooklm-rpc notebooklm-mcp`
 - NotebookLM authentication completed at least once
 
 Run:
 ```bash
-scripts/codex-skill-e2e.sh
+pixi run codex-skill-e2e
 ```
 
 Optional overrides:
@@ -269,61 +272,47 @@ NOTEBOOK_URL="https://notebooklm.google.com/notebook/<id>" \
 NOTEBOOK_NAME="My Test Notebook" \
 NOTEBOOK_DESC="Notebook for testing Codex + NotebookLM." \
 NOTEBOOK_ID="my-test-notebook" \
-scripts/codex-skill-e2e.sh
-```
-
-Optional profile override:
-```bash
-NOTEBOOKLM_PROFILE=standard scripts/codex-skill-e2e.sh
+pixi run codex-skill-e2e
 ```
 
 Validation checklist (expected results):
-- `get_health` reports `authenticated: true`
-- The target notebook exists or is added successfully
+- RPC auth is valid (cookies persisted via `save_auth_tokens`)
+- The target notebook exists in `notebook_list`
 - A response is returned with citations
 
 See `docs/CODEX_PLAYBOOK.md` for a full Codex CLI/SDK validation runbook.
 
 Recommended validation run:
 ```bash
-make codex-validate
+pixi run codex-validate-setup
 ```
 
 ### Codex Improvement Notes
 
-- Prefer smaller MCP tool profiles when available to reduce context load (see notebooklm-mcp docs).
-- Use `NOTEBOOKLM_PROFILE=minimal` for query-only flows and `NOTEBOOKLM_PROFILE=standard` when you need library management.
-- Use `notebook_id` for multi-notebook queries to avoid shared active state.
-- Retry `ask_question` once with `browser_options.timeout_ms=60000` if it times out.
+- Use `notebook_id` for multi-notebook queries to avoid shared state.
+- Retry a timed-out `notebook_query` once, then record a timeout and continue.
 
 ### Codex Multi-Notebook Query
 
 Run a single question across all notebooks and aggregate results (uses notebook_id to avoid shared state conflicts):
 
 ```bash
-make codex-ask-all
+pixi run codex-ask-all
 ```
 
 Optional override:
 ```bash
-QUESTION="What are the key risks in this architecture?" make codex-ask-all
+QUESTION="What are the key risks in this architecture?" pixi run codex-ask-all
 ```
 
-With a profile override:
+### RPC Auth Refresh
+
+If RPC auth expires, refresh cookies:
 ```bash
-NOTEBOOKLM_PROFILE=minimal QUESTION="What are the key risks in this architecture?" make codex-ask-all
+pixi run notebooklm-auth-rpc
 ```
 
-### Alternate MCP (HTTP/RPC) Queries
-
-Use the `notebooklm-rpc` server (after running `notebooklm-mcp-auth`):
-```bash
-NOTEBOOK_IDS=pytest-patterns \
-QUESTION="Summarize the key sources in this notebook." \
-scripts/codex-ask-all-rpc.sh
-```
-
-Pixi task:
+Use the `notebooklm-rpc` server after the file-mode auth:
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Summarize the key sources in this notebook." \
@@ -334,7 +323,7 @@ Filter by notebook IDs (comma-separated):
 ```bash
 NOTEBOOK_IDS=pytest-patterns \
 QUESTION="Provide modern best practices for integration tests without mocks." \
-make codex-ask-all
+pixi run codex-ask-all
 ```
 
 Validation checklist (expected results):
@@ -342,24 +331,24 @@ Validation checklist (expected results):
 - Citations are included when NotebookLM provides them
 - Timeouts are retried once and reported
 
+### Repo Hygiene (Pixi-Only)
+
+Install the pre-commit hook to block bash scripts and non-Pixi commands:
+```bash
+pixi run hooks-install
+```
+
+Run locally on demand:
+```bash
+pixi run hooks-run
+```
+
 ### Codex Multi-Notebook Query (Subagent-aware)
 
 If Codex supports subagents or task parallelism, this script asks a subagent per notebook; otherwise it falls back to sequential queries:
 
 ```bash
-scripts/codex-ask-all-subagents.sh
-```
-
-Optional overrides:
-```bash
-NOTEBOOKLM_PROFILE=standard \
-QUESTION="Summarize authentication flow changes." \
-scripts/codex-ask-all-subagents.sh
-```
-
-Make target:
-```bash
-make codex-ask-all-subagents
+pixi run codex-ask-all-subagents
 ```
 
 SDK example:
@@ -368,38 +357,22 @@ cd codex-sdk-test
 QUESTION="Summarize auth flow changes." npm run test:notebooklm-ask-all
 ```
 
-### Parallel Auth Bootstrap (Recommended for Multi-Process)
+### Auth Bootstrap (Recommended for Multi-Process)
 
-Bootstrap a single login, then fan out parallel workers that reuse the profile:
+Run the auth flow once, then fan out workers that reuse the cookie file:
 
 ```bash
-make codex-bootstrap-parallel
-```
-
-Optional overrides:
-```bash
-NOTEBOOK_PROFILE_STRATEGY=auto \
-NOTEBOOK_CLONE_PROFILE=true \
-QUESTION="Summarize improvements for the Codex integration." \
-make codex-bootstrap-parallel
-```
-
-Bootstrap only (no query):
-```bash
-make codex-bootstrap-auth
+pixi run notebooklm-auth-rpc
 ```
 
 ## Plugin Commands
 
 | Command | Description |
 |---------|-------------|
-| `/nlm ask <question>` | Ask a question to the active notebook |
-| `/nlm add <url>` | Add a notebook to your library (auto-selects as active) |
-| `/nlm list` | List all notebooks in your library |
-| `/nlm select <name>` | Set active notebook for queries |
-| `/nlm auth` | Check authentication status |
-| `/nlm auth setup` | First-time authentication (opens browser) |
-| `/nlm auth reset` | Clear and re-authenticate |
+| `/nlm ask <question>` | Ask a question to a notebook by ID |
+| `/nlm list` | List all notebooks |
+| `/nlm create <name>` | Create a new notebook |
+| `/nlm auth rpc` | Save RPC auth cookies |
 
 ## Features
 
@@ -428,15 +401,15 @@ make codex-bootstrap-auth
                                │                        │
                                │                        v
                                │                 ┌─────────────┐
-                               │                 │  Playwright │
-                               v                 │   Browser   │
+                               │                 │ Auth Helper │
+                               v                 │ (cookies)   │
                         ┌──────────────┐         └─────────────┘
                         │ MCP Tools    │                │
-                        │ - ask_question│               v
-                        │ - add_notebook│        ┌─────────────┐
-                        │ - list_notebooks│      │ NotebookLM  │
-                        │ - select_notebook│     │   (Gemini)  │
-                        │ - get_health  │        └─────────────┘
+                        │ - notebook_list│              v
+                        │ - notebook_query│     ┌─────────────┐
+                        │ - notebook_add_url│   │ NotebookLM  │
+                        │ - research_start│     │   (Gemini)  │
+                        │ - studio_status│      └─────────────┘
                         └──────────────┘
 ```
 
@@ -456,8 +429,8 @@ The plugin uses the NotebookLM MCP server which handles:
 
 **Add Documentation:**
 ```bash
-/nlm add https://notebooklm.google.com/notebook/YOUR_ID
-# Automatically discovers content and sets as active
+/nlm source add-url <notebook_id> <url>
+# Adds a URL source to a notebook
 ```
 
 **Deep Research (via agent):**
@@ -470,8 +443,8 @@ The plugin uses the NotebookLM MCP server which handles:
 
 **For Claude Code Plugin:**
 - Claude Code CLI
-- NotebookLM MCP server (`npx -y notebooklm-mcp@latest`)
-- Google Chrome browser
+- NotebookLM MCP server (`notebooklm-mcp-server`)
+- Google Chrome browser (for auth)
 - Google account with NotebookLM access
 
 **For Claude Desktop:**
@@ -506,6 +479,22 @@ The plugin supports multiple authentication backends (tried in priority order):
 | **Persistent** | All | Playwright browser profile |
 | **Manual** | All | Interactive browser login (fallback) |
 
+### RPC Server (Default: File Mode)
+
+For the HTTP/RPC server, default to file-mode auth:
+```bash
+notebooklm-mcp-auth --file
+```
+This writes cookies to `~/.notebooklm-mcp/auth.json` for RPC use.
+
+**Reuse on future runs:** if `~/.notebooklm-mcp/auth.json` exists, you can skip login.  
+**If auth breaks:** re-run `notebooklm-mcp-auth --file` to refresh cookies.
+
+**Validate auth without re-login:**
+```bash
+pixi run notebooklm-auth-check-rpc
+```
+
 ### Recommended: Chrome Remote Debugging (No Popups!)
 
 ```bash
@@ -528,24 +517,21 @@ alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
 
 ### Not Authenticated
 ```bash
-# Best: Start Chrome with remote debugging first
-open -a "Google Chrome" --args --remote-debugging-port=9222
+# Run notebooklm-mcp-auth and complete login
+notebooklm-mcp-auth
 
-# Or: Interactive setup
-/nlm auth setup
-
-# Check status
-/nlm auth
+# Save RPC auth cookies
+/nlm auth rpc
 ```
 
 ### Rate Limited (50 queries/day free tier)
 - Wait for daily reset, or
-- Use `/nlm auth reset` to switch Google accounts
+- Re-run `notebooklm-mcp-auth` with a different Google account
 
 ### Wrong Notebook
 ```bash
 /nlm list           # See all notebooks
-/nlm select <name>  # Switch to correct one
+# Re-run /nlm ask with the correct notebook_id
 ```
 
 See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for complete guide.

@@ -4,14 +4,11 @@ import { Codex } from "@openai/codex-sdk";
 
 const prompt = [
   "Use the notebooklm-patterns skill.",
-  "Check auth with mcp__notebooklm__get_health.",
-  "If not authenticated, run mcp__notebooklm__setup_auth and wait for login.",
-  "Then add https://notebooklm.google.com/notebook/8e98a4d8-f778-4dfc-88e8-2d59e48b1069 via mcp__notebooklm__add_notebook with:",
-  "name: \"NotebookLM Integration Test\",",
-  "description: \"Test notebook for validating Codex + NotebookLM integration in this repository.\",",
-  "topics: [\"notebooklm\", \"codex\", \"mcp\", \"integration\", \"authentication\"].",
-  "Select it with mcp__notebooklm__select_notebook and confirm the active notebook.",
-  "Proceed without asking for additional metadata.",
+  "Ensure RPC auth is available (cookies saved via save_auth_tokens).",
+  "List notebooks with mcp__notebooklm-rpc__notebook_list.",
+  "Find the notebook titled \"NotebookLM Integration Test\"; if missing, stop and report.",
+  "Ask it with mcp__notebooklm-rpc__notebook_query: \"What is this notebook about?\"",
+  "Return a 3-bullet summary with citations.",
 ].join(" ");
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));

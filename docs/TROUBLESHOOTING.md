@@ -7,8 +7,8 @@ Common issues and solutions for NotebookLM Claude Integration.
 Check system health with these commands:
 
 ```bash
-# Check authentication status
-/nlm auth
+# Save RPC auth cookies
+/nlm auth rpc
 
 # List notebooks
 /nlm list
@@ -47,33 +47,16 @@ claude
 
 **Symptom:**
 ```
-Error: Not authenticated. Run /nlm auth setup
+Error: Not authenticated
 ```
 
-**Solutions (try in order):**
-
-**A. Best: Use Chrome Remote Debugging (no popups)**
+**Solution:**
 ```bash
-# Start Chrome with remote debugging
-open -a "Google Chrome" --args --remote-debugging-port=9222
+# Run the auth helper and complete login
+notebooklm-mcp-auth
 
-# Login to NotebookLM in Chrome (one-time)
-# Navigate to https://notebooklm.google.com
-
-# Now queries use your existing session automatically!
-```
-
-**B. Alternative: Interactive setup**
-```bash
-# Run authentication setup
-/nlm auth setup
-```
-A Chrome browser window will open. Complete the Google login and return to Claude Code.
-
-**C. Check status and available backends:**
-```bash
-/nlm auth
-# Shows: CDP, Keychain, Persistent, Manual backend status
+# Save RPC auth cookies
+/nlm auth rpc
 ```
 
 ---
@@ -91,36 +74,29 @@ Error: Rate limit exceeded (50 queries/day for free tier)
 - Rate limits reset at midnight UTC
 
 **B. Switch Google accounts:**
-```bash
-/nlm auth reset
-```
-Then login with a different Google account.
+Re-run `notebooklm-mcp-auth` with a different Google account, then `/nlm auth rpc`.
 
 **C. Upgrade to Google AI Pro/Ultra**
 - 5x higher limits (250 queries/day)
 
 ---
 
-### 4. No Active Notebook
+### 4. Notebook ID Not Found
 
 **Symptom:**
 ```
-Error: No notebook is currently active
+Error: Notebook not found
 ```
 
 **Solution:**
-
 ```bash
 # List available notebooks
 /nlm list
-
-# Select one
-/nlm select <name>
 ```
 
 If no notebooks exist:
 ```bash
-/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
+/nlm create "My Notebook"
 ```
 
 ---
@@ -138,8 +114,8 @@ Error: Notebook not found in library
 # Check available notebooks
 /nlm list
 
-# Re-add the notebook
-/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
+# Create a new notebook if needed
+/nlm create "My Notebook"
 ```
 
 ---
@@ -165,15 +141,15 @@ google-chrome --version
 "C:\Program Files\Google\Chrome\Application\chrome.exe" --version
 ```
 
-**B. Reset browser state:**
+**B. Refresh cookies:**
 ```bash
-/nlm auth reset
+notebooklm-mcp-auth
 ```
 
 **C. Check MCP server:**
 ```bash
 claude mcp list
-# Should show 'notebooklm' server
+# Should show 'notebooklm-rpc' server
 ```
 
 ---
@@ -182,14 +158,15 @@ claude mcp list
 
 **Symptom:**
 ```
-Error: MCP server 'notebooklm' not found
+Error: MCP server 'notebooklm-rpc' not found
 ```
 
 **Solution:**
 
 ```bash
 # Add the MCP server
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # Restart Claude Code
 claude
@@ -233,13 +210,9 @@ Answers don't match expected content.
 **Solution:**
 
 ```bash
-# Check which notebook is active
 /nlm list
 
-# The [ACTIVE] marker shows current notebook
-
-# Switch if needed
-/nlm select "Correct Notebook Name"
+# Re-run /nlm ask with the correct notebook_id
 ```
 
 ---
@@ -255,7 +228,8 @@ Error: Session expired
 
 ```bash
 # Re-authenticate
-/nlm auth setup
+notebooklm-mcp-auth
+/nlm auth rpc
 ```
 
 Sessions typically last 30+ days but may expire sooner.
@@ -267,7 +241,7 @@ Sessions typically last 30+ days but may expire sooner.
 ### Check Authentication Status
 
 ```bash
-/nlm auth
+/nlm auth rpc
 ```
 
 **Expected output:**
@@ -298,7 +272,7 @@ claude mcp list
 
 **Expected output:**
 ```
-notebooklm: npx -y notebooklm-mcp@latest
+notebooklm-rpc: notebooklm-mcp
 ```
 
 ---
@@ -308,21 +282,16 @@ notebooklm: npx -y notebooklm-mcp@latest
 If all else fails, perform a complete reset:
 
 ```bash
-# 1. Reset authentication
-/nlm auth reset
-
-# 2. Remove and re-add MCP server
-claude mcp remove notebooklm
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+# 1. Remove and re-add MCP server
+claude mcp remove notebooklm-rpc
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # 3. Restart Claude Code
 claude
 
-# 4. Re-authenticate
-/nlm auth setup
-
-# 5. Re-add notebooks
-/nlm add https://notebooklm.google.com/notebook/YOUR_NOTEBOOK_ID
+# 3. Re-authenticate
+pixi run notebooklm-auth-rpc
 ```
 
 ---
@@ -330,15 +299,11 @@ claude
 ## Session Cap Reached
 
 **Symptoms:**
-- `ask_question` requests time out unexpectedly
-- `get_health` shows `active_sessions` equal to `max_sessions` (default 10)
+- `notebook_query` requests time out unexpectedly
 
 **Fix:**
-- Close old sessions via MCP tools (`list_sessions` → `close_session`) or
-- Restart the NotebookLM MCP server to clear inactive sessions
-
-If you’re using Codex/Claude tools, ask the agent to run:
-`mcp__notebooklm__list_sessions` and close inactive session IDs.
+- Retry the query once, then record a timeout and continue.
+- Re-run `pixi run notebooklm-auth-rpc` if auth appears stale.
 
 ---
 
@@ -446,7 +411,7 @@ A: No. The MCP server uses Playwright which requires Chromium-based browsers.
 A: Yes, with Chrome installed.
 
 **Q: Can I use multiple Google accounts?**
-A: Yes, but only one at a time. Use `/nlm auth reset` to switch accounts.
+A: Yes, but only one at a time. Re-run `notebooklm-mcp-auth` to switch accounts.
 
 **Q: Is my data stored remotely?**
 A: No. All data (library, auth) is stored locally by the MCP server.

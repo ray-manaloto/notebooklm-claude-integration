@@ -6,26 +6,21 @@ Enable one login process to establish credentials and allow parallel subagents/p
 
 ## Recommended Approach (Current MCP Capabilities)
 
-- Use a **persistent Chrome profile** as the base login profile.
-- Set **multi-instance strategy** to allow parallel workers while preserving auth:
-  - `NOTEBOOK_PROFILE_STRATEGY=auto`
-  - `NOTEBOOK_CLONE_PROFILE=true`
-- Run a **single login bootstrap** first to populate the base profile.
-- Launch parallel workers after the bootstrap completes.
+- Use the **notebooklm-mcp** cookie file (`~/.notebooklm-mcp/auth.json`) as the shared auth source.
+- Run a **single login bootstrap** (`notebooklm-mcp-auth` + `save_auth_tokens`) to populate cookies.
+- Launch parallel workers after the bootstrap completes; all workers read the same cookie file.
 
 ## Why This Works
 
-- The MCP server uses a shared persistent context, so all sessions within one process share auth.
-- With `clone_profile_on_isolated`, isolated profiles inherit the logged-in state from the base profile.
+- The MCP server reads a single cookie file, so all sessions share auth state.
 - Avoids needing multiple interactive logins.
 
 ## Proposed Workflow
 
 1. **Bootstrap login** (single process, interactive once).
-2. **Spawn parallel workers** with `NOTEBOOK_PROFILE_STRATEGY=auto` and `NOTEBOOK_CLONE_PROFILE=true`.
-3. **Cleanup** isolated profiles via `NOTEBOOK_INSTANCE_TTL_HOURS` / `NOTEBOOK_INSTANCE_MAX_COUNT`.
+2. **Spawn parallel workers** that read `~/.notebooklm-mcp/auth.json`.
+3. **Re-auth** only when cookies expire.
 
 ## Open Decisions
 
-- Whether to default `NOTEBOOK_CLONE_PROFILE=true` in examples/scripts.
 - Whether to add a script that performs bootstrap + fan-out in a single command.

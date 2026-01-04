@@ -2,14 +2,14 @@
 
 > Query Google NotebookLM notebooks for source-grounded, citation-backed answers powered by Gemini AI.
 
-**1 command** | **1 agent** | **1 skill** | **9 MCP tools**
+**1 command** | **1 agent** | **1 skill** | **31 MCP tools**
 
 ## Overview
 
 This plugin integrates NotebookLM with Claude Code, enabling you to:
 
 - **Query notebooks** for hallucination-free answers with citations
-- **Manage a library** of multiple notebooks by topic
+- **Manage notebooks and sources** by topic
 - **Research deeply** with automatic follow-up questions
 - **Switch contexts** seamlessly between documentation sources
 
@@ -17,7 +17,8 @@ This plugin integrates NotebookLM with Claude Code, enabling you to:
 
 ```bash
 # 1. Install the MCP server (prerequisite)
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 
 # 2. Add the marketplace from GitHub
 claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
@@ -25,11 +26,12 @@ claude plugin marketplace add ray-manaloto/notebooklm-claude-integration
 # 3. Install the plugin
 claude plugin install notebooklm@notebooklm-plugin --scope project
 
-# 4. Restart Claude Code and authenticate
-/nlm auth setup
+# 4. Authenticate (one-time)
+notebooklm-mcp-auth
+/nlm auth rpc
 
-# 5. Add your first notebook
-/nlm add https://notebooklm.google.com/notebook/YOUR_ID
+# 5. List notebooks and note the ID
+/nlm list
 
 # 6. Start querying
 /nlm ask "How do I implement authentication?"
@@ -54,11 +56,10 @@ claude plugin list              # Should show: notebooklm
 
 | Subcommand | Usage | Description |
 |------------|-------|-------------|
-| `ask` | `/nlm ask "question"` | Query the active notebook |
-| `add` | `/nlm add <url>` | Add notebook to library (auto-selects as active) |
-| `list` | `/nlm list` | List all notebooks in library |
-| `select` | `/nlm select <name>` | Set active notebook for queries |
-| `auth` | `/nlm auth [setup\|reset]` | Manage Google authentication |
+| `ask` | `/nlm ask "question"` | Query a notebook by ID |
+| `list` | `/nlm list` | List all notebooks |
+| `create` | `/nlm create <name>` | Create a new notebook |
+| `auth` | `/nlm auth rpc` | Save RPC auth cookies |
 
 ### Agents (1)
 
@@ -78,15 +79,29 @@ The plugin uses these NotebookLM MCP server tools:
 
 | Tool | Purpose |
 |------|---------|
-| `mcp__notebooklm__ask_question` | Query a notebook |
-| `mcp__notebooklm__add_notebook` | Add notebook to library |
-| `mcp__notebooklm__list_notebooks` | List all notebooks |
-| `mcp__notebooklm__select_notebook` | Set active notebook |
-| `mcp__notebooklm__get_notebook` | Get notebook details |
-| `mcp__notebooklm__search_notebooks` | Search by query |
-| `mcp__notebooklm__get_health` | Check auth status |
-| `mcp__notebooklm__setup_auth` | Initial authentication |
-| `mcp__notebooklm__re_auth` | Reset authentication |
+| `mcp__notebooklm-rpc__save_auth_tokens` | Persist auth cookies |
+| `mcp__notebooklm-rpc__notebook_list` | List all notebooks |
+| `mcp__notebooklm-rpc__notebook_create` | Create a new notebook |
+| `mcp__notebooklm-rpc__notebook_get` | Get notebook details |
+| `mcp__notebooklm-rpc__notebook_describe` | Summarize notebook content |
+| `mcp__notebooklm-rpc__notebook_query` | Ask a question |
+| `mcp__notebooklm-rpc__notebook_add_url` | Add URL/YouTube source |
+| `mcp__notebooklm-rpc__notebook_add_text` | Add text source |
+| `mcp__notebooklm-rpc__notebook_add_drive` | Add Drive source |
+| `mcp__notebooklm-rpc__source_list_drive` | List Drive sources w/ freshness |
+| `mcp__notebooklm-rpc__source_sync_drive` | Sync stale Drive sources |
+| `mcp__notebooklm-rpc__source_delete` | Delete a source |
+| `mcp__notebooklm-rpc__source_describe` | Summarize a source |
+| `mcp__notebooklm-rpc__research_start` | Start research |
+| `mcp__notebooklm-rpc__research_status` | Poll research progress |
+| `mcp__notebooklm-rpc__research_import` | Import research sources |
+| `mcp__notebooklm-rpc__chat_configure` | Configure chat behavior |
+| `mcp__notebooklm-rpc__audio_overview_create` | Generate audio overview |
+| `mcp__notebooklm-rpc__video_overview_create` | Generate video overview |
+| `mcp__notebooklm-rpc__infographic_create` | Generate infographic |
+| `mcp__notebooklm-rpc__slide_deck_create` | Generate slide deck |
+| `mcp__notebooklm-rpc__studio_status` | Check studio job status |
+| `mcp__notebooklm-rpc__studio_delete` | Delete studio artifacts |
 
 ## Installation Options
 
@@ -107,12 +122,12 @@ claude plugin install notebooklm@notebooklm-plugin --scope local
 
 ```bash
 # Check authentication
-/nlm auth
+/nlm auth rpc
 
-# Add a documentation notebook
-/nlm add https://notebooklm.google.com/notebook/abc123
+# List notebooks and note an ID
+/nlm list
 
-# Ask questions
+# Ask questions (use the notebook_id)
 /nlm ask "How do I implement OAuth2?"
 /nlm ask "What are the rate limiting strategies?"
 ```
@@ -120,13 +135,8 @@ claude plugin install notebooklm@notebooklm-plugin --scope local
 ### Multiple Notebooks
 
 ```bash
-# Add multiple notebooks
-/nlm add https://notebooklm.google.com/notebook/docs1
-/nlm add https://notebooklm.google.com/notebook/docs2
-
-# List and switch
+# List and compare
 /nlm list
-/nlm select "API Documentation"
 ```
 
 ### Research Agent (Proactive)
@@ -197,31 +207,27 @@ alias chrome-debug='open -a "Google Chrome" --args --remote-debugging-port=9222'
 /nlm auth cdp
 
 # Check keychain status (macOS)
-/nlm auth keychain
-
-# Setup (opens browser)
-/nlm auth setup
-
-# Reset and re-authenticate
-/nlm auth reset
+# Save cookies for RPC
+/nlm auth rpc
 ```
 
 ### Rate Limit Exceeded
 
 - Wait for daily reset (midnight UTC), or
-- Use `/nlm auth reset` to switch Google accounts
+- Re-run `notebooklm-mcp-auth` with a different Google account
 
 ### Wrong Notebook
 
 ```bash
-/nlm list           # See all notebooks with [ACTIVE] marker
-/nlm select <name>  # Switch to correct one
+/nlm list           # See all notebooks and their IDs
+# Re-run /nlm ask with the correct notebook_id
 ```
 
 ### MCP Server Not Found
 
 ```bash
-claude mcp add notebooklm -- npx -y notebooklm-mcp@latest
+uv tool install notebooklm-mcp-server
+claude mcp add notebooklm-rpc -- notebooklm-mcp
 # Restart Claude Code
 ```
 
@@ -257,7 +263,7 @@ auth-layer/                   # Multi-backend authentication layer
 ## Requirements
 
 - **Claude Code CLI** - v1.0+
-- **NotebookLM MCP Server** - `npx -y notebooklm-mcp@latest`
+- **NotebookLM MCP Server** - `notebooklm-mcp-server`
 - **Google Chrome** - For browser automation
 - **Google Account** - With NotebookLM access
 

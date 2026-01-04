@@ -29,16 +29,16 @@ Project scope: <project>/.mcp.json
 
 ## 🎯 Modern Best Practice: Centralized Definition with Scoped Distribution
 
-### Strategy 1: Single Source + Installation Script (Recommended)
+### Strategy 1: Single Source + Pixi Tasks (Recommended)
 
 Create a **single source of truth** for your MCP servers, then distribute to both Claude Desktop and Claude Code:
 
 ```bash
 # Your centralized MCP definitions
 ~/mcp-servers/
-├── mcp-servers.json          # Source of truth
-├── install-desktop.sh         # Deploy to Desktop
-└── install-code.sh            # Deploy to Code
+├── servers.json              # Source of truth
+├── env.example               # Credential template
+└── pixi.toml                 # Task runner
 ```
 
 **mcp-servers.json** (Your single source):
@@ -51,9 +51,9 @@ Create a **single source of truth** for your MCP servers, then distribute to bot
       "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
     }
   },
-  "notebooklm": {
-    "command": "npx",
-    "args": ["-y", "notebooklm-mcp@latest"]
+  "notebooklm-rpc": {
+    "command": "notebooklm-mcp",
+    "args": []
   },
   "brave-search": {
     "command": "npx",
@@ -65,45 +65,15 @@ Create a **single source of truth** for your MCP servers, then distribute to bot
 }
 ```
 
-**install-desktop.sh**:
+**Pixi Tasks**:
 ```bash
-#!/bin/bash
-# Deploy to Claude Desktop
-
-CONFIG_FILE="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-
-# Create config with mcpServers wrapper
-jq '{mcpServers: .}' ~/mcp-servers/mcp-servers.json > "$CONFIG_FILE"
-
-echo "✅ Installed to Claude Desktop"
-echo "Restart Claude Desktop to apply changes"
-```
-
-**install-code.sh**:
-```bash
-#!/bin/bash
-# Deploy to Claude Code (user scope)
-
-CONFIG_FILE="$HOME/.claude.json"
-
-# Read servers from source
-SERVERS=$(cat ~/mcp-servers/mcp-servers.json)
-
-# Add each server to Claude Code
-for server in $(echo "$SERVERS" | jq -r 'keys[]'); do
-    SERVER_CONFIG=$(echo "$SERVERS" | jq -c ".\"$server\"")
-    
-    # Use Claude Code CLI to add
-    claude mcp add-json "$server" "$SERVER_CONFIG" --scope user
-done
-
-echo "✅ Installed to Claude Code"
-echo "Run 'claude mcp list' to verify"
+pixi run mcp-install-desktop
+pixi run mcp-install-code
 ```
 
 **Why This Works:**
 - ✅ Single source of truth
-- ✅ Easy updates (edit one file, run two scripts)
+- ✅ Easy updates (edit one file, run two tasks)
 - ✅ Version control friendly
 - ✅ Environment variable support
 - ✅ Team sharing via git
@@ -249,9 +219,9 @@ cat > ~/mcp-config/servers.json << 'EOF'
     "args": ["-y", "@modelcontextprotocol/server-github"],
     "env": {"GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"}
   },
-  "notebooklm": {
-    "command": "npx",
-    "args": ["-y", "notebooklm-mcp@latest"]
+  "notebooklm-rpc": {
+    "command": "notebooklm-mcp",
+    "args": []
   },
   "brave-search": {
     "command": "npx",
@@ -264,54 +234,17 @@ EOF
 
 ### Step 3: Install to Claude Desktop
 ```bash
-# macOS
-jq '{mcpServers: .}' ~/mcp-config/servers.json > \
-  "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-
-# Restart Claude Desktop
+pixi run mcp-install-desktop
 ```
 
 ### Step 4: Install to Claude Code
 ```bash
-# Install each server
-claude mcp add-json github "$(jq -c '.github' ~/mcp-config/servers.json)" --scope user
-claude mcp add-json notebooklm "$(jq -c '.notebooklm' ~/mcp-config/servers.json)" --scope user
-claude mcp add-json brave-search "$(jq -c '.["brave-search"]' ~/mcp-config/servers.json)" --scope user
-
-# Verify
-claude mcp list
+pixi run mcp-install-code
 ```
 
-### Step 5: Create Update Scripts
+### Step 5: Update Both Environments
 ```bash
-cat > ~/mcp-config/update.sh << 'SCRIPT'
-#!/bin/bash
-SOURCE="$HOME/mcp-config/servers.json"
-
-echo "📦 Updating MCP servers from $SOURCE"
-
-# Update Desktop
-jq '{mcpServers: .}' "$SOURCE" > \
-  "$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-echo "✅ Claude Desktop updated"
-
-# Update Code
-for server in $(jq -r 'keys[]' "$SOURCE"); do
-    config=$(jq -c ".\"$server\"" "$SOURCE")
-    claude mcp remove "$server" 2>/dev/null || true
-    claude mcp add-json "$server" "$config" --scope user
-    echo "✅ $server updated in Claude Code"
-done
-
-echo "🎉 All done! Restart Claude Desktop to apply changes"
-SCRIPT
-
-chmod +x ~/mcp-config/update.sh
-```
-
-Now you can update all MCP servers by editing `~/mcp-config/servers.json` and running:
-```bash
-~/mcp-config/update.sh
+pixi run mcp-update-all
 ```
 
 ---
@@ -342,7 +275,6 @@ claude mcp add github --scope user  # ✅ Clear intent
 ### ✅ Do: Version control your configs (without secrets)
 ```bash
 git add ~/mcp-config/servers.json
-git add ~/mcp-config/*.sh
 git commit -m "Add MCP server definitions"
 ```
 
