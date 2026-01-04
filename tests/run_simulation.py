@@ -231,7 +231,11 @@ def main() -> None:
     _emit("  • NotebookLM plugin installed and configured")
     _emit(f"  • Your notebook: {notebook_id}{Colors.RESET}\n")
 
-    input(f"{Colors.GREEN}Press Enter to start the simulation...{Colors.RESET}")
+    if sys.stdin.isatty():
+        input(f"{Colors.GREEN}Press Enter to start the simulation...{Colors.RESET}")
+    else:
+        _emit(f"{Colors.GREEN}Press Enter to start the simulation...{Colors.RESET}")
+        _emit("(Non-interactive mode detected; continuing.)")
 
     _scenario_first_time_setup()
     _scenario_add_notebook(notebook_url)
