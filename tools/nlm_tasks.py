@@ -66,10 +66,10 @@ def _run_codex(prompt: str) -> None:
     if not codex_path:
         message = "codex CLI not found on PATH"
         raise RuntimeError(message)
-    subprocess.run(
+    subprocess.run(  # noqa: S603
         [codex_path, "--enable", "skills", "exec", prompt],
         check=True,
-    )  # noqa: S603
+    )
 
 
 def main() -> int:
