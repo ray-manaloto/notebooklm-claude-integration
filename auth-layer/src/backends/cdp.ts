@@ -6,7 +6,7 @@
  * NotebookLM in that browser, we can reuse their session.
  */
 
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { chromium, type BrowserContext, type Page } from 'playwright';
 import type { AuthBackend, AuthResult, AuthConfig, Cookie } from '../types.js';
 
 export class CDPAuthBackend implements AuthBackend {
