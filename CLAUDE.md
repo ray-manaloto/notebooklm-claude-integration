@@ -51,8 +51,16 @@ The plugin provides a single `/nlm` command with subcommands:
 | Command | Description |
 |---------|-------------|
 | `/nlm ask <question>` | Ask a question to a notebook by ID |
+| `/nlm ask-all <question>` | Ask all notebooks in parallel, compare answers |
 | `/nlm list` | List all notebooks |
-| `/nlm create <name>` | Create a new notebook |
+| `/nlm create <name>` | Create a new notebook (RPC) |
+| `/nlm rename <id> <name>` | Rename a notebook (RPC) |
+| `/nlm delete <id>` | Delete a notebook (RPC, confirm) |
+| `/nlm source ...` | Add/list/sync/delete sources (RPC) |
+| `/nlm research ...` | Start/status/import research (RPC) |
+| `/nlm studio ...` | Create/status/delete studio artifacts (RPC) |
+| `/nlm describe ...` | Summarize notebook or source (RPC) |
+| `/nlm configure ...` | Configure chat goal/length/prompt (RPC) |
 | `/nlm auth rpc` | Save RPC auth cookies |
 
 ## MCP Tools Reference

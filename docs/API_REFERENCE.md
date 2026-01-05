@@ -24,14 +24,19 @@ Main command for NotebookLM RPC interactions. Subcommands cover notebooks, sourc
 /nlm ask "What does this notebook say about OAuth?"
 /nlm create "API Research"
 /nlm source add-url <notebook_id> <url>
+/nlm source add-drive <notebook_id> <drive_doc_url> "Title"
 /nlm research start <notebook_id> <query>
+/nlm research status <notebook_id>
+/nlm research import <notebook_id> <task_id>
 /nlm studio audio <notebook_id>
+/nlm studio status <notebook_id>
 /nlm auth rpc
 ```
 
 **Notes:**
 - Use `/nlm list` to fetch notebook IDs for `/nlm ask`.
 - Authentication is cookie-based via notebooklm-mcp-auth, then `/nlm auth rpc` to save tokens.
+- For Drive sources, extract the document ID from the Google Doc URL and supply a title.
 
 ---
 

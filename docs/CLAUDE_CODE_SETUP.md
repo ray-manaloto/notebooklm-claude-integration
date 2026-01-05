@@ -92,8 +92,16 @@ A Chrome browser will open for Google login. Complete the login and return to Cl
 | Command | Description |
 |---------|-------------|
 | `/nlm ask <question>` | Ask a question to a notebook by ID |
+| `/nlm ask-all <question>` | Ask all notebooks in parallel, compare answers |
 | `/nlm list` | List all notebooks |
 | `/nlm create <name>` | Create a new notebook |
+| `/nlm rename <id> <name>` | Rename a notebook |
+| `/nlm delete <id>` | Delete a notebook (confirm) |
+| `/nlm source ...` | Add/list/sync/delete sources |
+| `/nlm research ...` | Start/status/import research |
+| `/nlm studio ...` | Create/status/delete studio artifacts |
+| `/nlm describe ...` | Summarize notebook or source |
+| `/nlm configure ...` | Configure chat goal/length/prompt |
 | `/nlm auth rpc` | Save RPC auth cookies |
 
 ## Usage Examples
@@ -124,6 +132,37 @@ Response includes:
 # Use notebook_id in your ask prompt
 /nlm ask "Notebook ID: <id>. Summarize the key sources."
 ```
+
+### Sources, Research, Studio
+
+```bash
+# Add sources
+/nlm source add-url <notebook_id> <url>
+/nlm source add-text <notebook_id> "<text>"
+/nlm source add-drive <notebook_id> <drive_doc_url> "Title"
+
+# List/sync/delete sources
+/nlm source list <notebook_id>
+/nlm source sync <source_id> [source_id...]
+/nlm source delete <source_id>
+
+# Research workflow
+/nlm research start <notebook_id> "<query>"
+/nlm research status <notebook_id>
+/nlm research import <notebook_id> <task_id>
+
+# Studio artifacts
+/nlm studio audio <notebook_id>
+/nlm studio video <notebook_id>
+/nlm studio infographic <notebook_id>
+/nlm studio slides <notebook_id>
+/nlm studio status <notebook_id>
+/nlm studio delete <artifact_id>
+```
+
+Notes:
+- Drive sources use the Google Doc URL (the ID is extracted from `/d/<id>`).
+- Source sync/delete and studio create/delete require confirmation.
 
 ## Research Agent
 

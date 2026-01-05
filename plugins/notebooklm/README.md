@@ -57,9 +57,21 @@ claude plugin list              # Should show: notebooklm
 | Subcommand | Usage | Description |
 |------------|-------|-------------|
 | `ask` | `/nlm ask "question"` | Query a notebook by ID |
+| `ask-all` | `/nlm ask-all "question"` | Query all notebooks in parallel |
 | `list` | `/nlm list` | List all notebooks |
 | `create` | `/nlm create <name>` | Create a new notebook |
+| `rename` | `/nlm rename <id> <name>` | Rename a notebook |
+| `delete` | `/nlm delete <id>` | Delete a notebook (confirm) |
+| `source` | `/nlm source <add-url|add-text|add-drive|list|sync|delete> ...` | Manage notebook sources |
+| `research` | `/nlm research <start|status|import> ...` | Discover/import sources |
+| `studio` | `/nlm studio <audio|video|infographic|slides|status|delete> ...` | Create/manage Studio artifacts |
+| `describe` | `/nlm describe <notebook|source> <id>` | Summarize notebook or source |
+| `configure` | `/nlm configure <goal|length|prompt> ...` | Configure chat settings |
 | `auth` | `/nlm auth rpc` | Save RPC auth cookies |
+
+Notes:
+- `add-drive` expects a Google Doc URL; the document ID is extracted from `/d/<id>`.
+- Source sync/delete and Studio create/delete require confirmation.
 
 ### Agents (1)
 

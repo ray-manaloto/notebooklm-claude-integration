@@ -48,7 +48,7 @@ Query your Google NotebookLM notebooks for source-grounded, citation-backed answ
 | `research` | `/nlm research <start|status|import> ...` | Discover/import sources (RPC only) |
 | `studio` | `/nlm studio <audio|video|infographic|slides|status|delete> ...` | Create or manage Studio artifacts (RPC only) |
 | `describe` | `/nlm describe <notebook|source> <id>` | Summarize notebook or source (RPC only) |
-| `configure` | `/nlm configure <goal|style|length> ...` | Configure chat goal/style/length (RPC only) |
+| `configure` | `/nlm configure <goal|length|prompt> ...` | Configure chat goal/length/custom prompt (RPC only) |
 | `auth` | `/nlm auth [rpc]` | Manage authentication |
 
 ## Arguments
@@ -247,21 +247,29 @@ Auth tokens are stored at:
 Subcommands:
 - `/nlm source add-url <notebook_id> <url>`
 - `/nlm source add-text <notebook_id> <text>`
-- `/nlm source add-drive <notebook_id> <drive_url>`
+- `/nlm source add-drive <notebook_id> <drive_doc_url> [title]`
 - `/nlm source list <notebook_id>`
-- `/nlm source sync <notebook_id>`
-- `/nlm source delete <notebook_id> <source_id>`
+- `/nlm source sync <source_id> [source_id...]`
+- `/nlm source delete <source_id>`
 
 Use the corresponding RPC tools: `notebook_add_url`, `notebook_add_text`, `notebook_add_drive`, `source_list_drive`, `source_sync_drive`, `source_delete`.
+
+Notes:
+- `add-drive` expects a Google Doc ID + title. Extract the ID from the URL and pass it as `document_id`. If a title isn't provided, use the document title.
+- `source sync` and `source delete` require `confirm=true` and operate on `source_id` values (use `/nlm source list` to get them).
 
 ### `research` - Research (RPC)
 
 Subcommands:
 - `/nlm research start <notebook_id> <query>`
-- `/nlm research status <research_id>`
-- `/nlm research import <research_id>`
+- `/nlm research status <notebook_id>`
+- `/nlm research import <notebook_id> <task_id>`
 
 Use `research_start`, `research_status`, and `research_import`.
+Notes:
+- `research_start` returns a `task_id`.
+- `research_status` polls by `notebook_id` (optional: poll_interval, max_wait, compact).
+- `research_import` requires both `notebook_id` and `task_id`.
 
 ### `studio` - Studio Artifacts (RPC)
 
@@ -270,10 +278,13 @@ Subcommands:
 - `/nlm studio video <notebook_id>`
 - `/nlm studio infographic <notebook_id>`
 - `/nlm studio slides <notebook_id>`
-- `/nlm studio status <artifact_id>`
+- `/nlm studio status <notebook_id>`
 - `/nlm studio delete <artifact_id>`
 
 Use `audio_overview_create`, `video_overview_create`, `infographic_create`, `slide_deck_create`, `studio_status`, `studio_delete`.
+Notes:
+- Studio create/delete require `confirm=true`.
+- `studio_status` lists artifacts by `notebook_id`.
 
 ### `describe` - Summaries (RPC)
 
@@ -282,7 +293,9 @@ Use `audio_overview_create`, `video_overview_create`, `infographic_create`, `sli
 
 ### `configure` - Chat Settings (RPC)
 
-- `/nlm configure <goal|style|length> <value>` → `chat_configure`
+- `/nlm configure goal <default|learning_guide|custom>`
+- `/nlm configure length <default|shorter|longer>`
+- `/nlm configure prompt <text>` (maps to `custom_prompt` when goal=custom)
 
 **`/nlm auth rpc`:**
 Show notebooklm-mcp auth steps:
