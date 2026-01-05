@@ -176,7 +176,8 @@ def validate_setup() -> None:
         f" Ask each selected notebook (via notebook_id): '{question}'. Aggregate responses labeled "
         "by notebook name and include citations. If any response is off-topic, retry once with a "
         f"narrower prompt that starts with: 'Answer ONLY about: {question}'. If it still drifts, "
-        "report a likely notebook-content mismatch."
+        "report a likely notebook-content mismatch. If a notebook times out, record the timeout "
+        "and continue without retrying that notebook."
     )
 
     _codex_exec(prompt, env)

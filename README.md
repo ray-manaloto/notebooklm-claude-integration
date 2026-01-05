@@ -312,6 +312,11 @@ If RPC auth expires, refresh cookies:
 pixi run notebooklm-auth-rpc
 ```
 
+### Pixi RPC Task Runner
+
+All NotebookLM MCP tools are available as `pixi run nlm-*` tasks (1:1 mapping).
+See `docs/API_REFERENCE.md` for the full task list and argument conventions.
+
 Use the `notebooklm-rpc` server after the file-mode auth:
 ```bash
 NOTEBOOK_IDS=pytest-patterns \

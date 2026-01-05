@@ -113,6 +113,26 @@ QUESTION="Summarize the key sources in this notebook." \
 pixi run notebooklm-integration
 ```
 
+## Pixi RPC Task Quickstart
+
+Run NotebookLM MCP tools directly via Pixi tasks (1:1 with RPC tools):
+
+```bash
+pixi run nlm-notebook-list
+
+NLM_ARGS_JSON='{"notebook_id":"<id>","question":"Summarize sources."}' \
+pixi run nlm-notebook-query
+```
+
+Destructive tools require an explicit confirmation flag:
+
+```bash
+NLM_CONFIRM=1 NLM_ARGS_JSON='{"notebook_id":"<id>"}' \
+pixi run nlm-notebook-delete
+```
+
+See `docs/API_REFERENCE.md` for the full task list and argument conventions.
+
 ## 6) Data Quality & Triangulation
 
 To reduce hallucinations, curate NotebookLM sources using a triangulated set:

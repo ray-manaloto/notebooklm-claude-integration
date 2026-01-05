@@ -6,6 +6,7 @@ Complete reference for all NotebookLM Claude Integration commands and MCP tools.
 
 - [Slash Commands](#slash-commands)
 - [MCP Tools](#mcp-tools)
+- [Pixi Tasks (RPC Runner)](#pixi-tasks-rpc-runner)
 - [Data Structures](#data-structures)
 - [Error Handling](#error-handling)
 
@@ -74,6 +75,51 @@ The plugin uses the `notebooklm-mcp` RPC toolset for full feature parity:
 - `mcp__notebooklm-rpc__slide_deck_create`
 - `mcp__notebooklm-rpc__studio_status`
 - `mcp__notebooklm-rpc__studio_delete`
+
+---
+
+## Pixi Tasks (RPC Runner)
+
+Each RPC tool is mapped to a `pixi run nlm-*` task using `tools/nlm_tasks.py`.  
+Pass arguments via `NLM_ARGS_JSON` or `--args`. Destructive tools require `NLM_CONFIRM=1`.
+
+**Examples:**
+```bash
+NLM_ARGS_JSON='{"notebook_id":"abc","question":"What changed?"}' \
+pixi run nlm-notebook-query
+
+NLM_CONFIRM=1 NLM_ARGS_JSON='{"notebook_id":"abc"}' \
+pixi run nlm-notebook-delete
+```
+
+**Task map (1:1 with MCP tools):**
+```text
+pixi run nlm-save-auth-tokens
+pixi run nlm-notebook-list
+pixi run nlm-notebook-create
+pixi run nlm-notebook-get
+pixi run nlm-notebook-describe
+pixi run nlm-source-describe
+pixi run nlm-notebook-rename
+pixi run nlm-chat-configure
+pixi run nlm-notebook-delete
+pixi run nlm-notebook-add-url
+pixi run nlm-notebook-add-text
+pixi run nlm-notebook-add-drive
+pixi run nlm-notebook-query
+pixi run nlm-source-list-drive
+pixi run nlm-source-sync-drive
+pixi run nlm-source-delete
+pixi run nlm-research-start
+pixi run nlm-research-status
+pixi run nlm-research-import
+pixi run nlm-audio-overview-create
+pixi run nlm-video-overview-create
+pixi run nlm-infographic-create
+pixi run nlm-slide-deck-create
+pixi run nlm-studio-status
+pixi run nlm-studio-delete
+```
 
 ## Data Structures
 
